@@ -11,9 +11,10 @@ Go Client for Celery Distributed Task Queue
 Having being involved in a number of projects migrating server from python to go, I have realized many of celery distributed tasks cannot be easily converted.
 Simply because Python still has abundance of useful third-party libraries available.
 
-## Supported Brokers
+## Supported Brokers/Backend
 
 We are currently only supporting Redis but will add support for RabbitMQ soon.
+Currently broker and backend database must be same.
 
 * Redis
 
@@ -22,13 +23,40 @@ We are currently only supporting Redis but will add support for RabbitMQ soon.
 * go get gopkg.in/redis.v4
 * go get github.com/satori/go.uuid
 
+## Celery Configuration
+
+Celery must be configured to use **json** instead of default **pickle** encoding.
+This is because Go currently has no stable support for decoding pickle objects.
+Pass below configuration parameters to use **json**.
+
+```python
+CELERY_TASK_SERIALIZER='json',
+CELERY_ACCEPT_CONTENT=['json'],  # Ignore other content
+CELERY_RESULT_SERIALIZER='json',
+CELERY_ENABLE_UTC=True,
+```
+
 ## Example
 
 ```go
 func main() {
-    celeryBroker, _ := NewCeleryRedisBroker("localhost:6379", "", 0)
-    celeryClient, _ := NewCeleryClient(celeryBroker)
-    celeryClient.SendMessage(NewCeleryTask())
+    // create broker
+    celeryBroker, _ := gocelery.NewCeleryRedisBroker("localhost:6379", "", 0)
+    // create client
+    celeryClient, _ := gocelery.NewCeleryClient(celeryBroker)
+    // send task
+    asyncResult, _ := celeryClient.Delay("worker.add", 3, 2)
+
+    // wait until result is ready
+    isReady := asyncResult.Ready()
+    for isReady == false {
+        isReady = asyncResult.Ready()
+        time.Sleep(1 * time.Second)
+    }
+
+    // get the result
+    res := asyncResult.Get()
+    fmt.Println(res)
 }
 ```
 
@@ -37,13 +65,20 @@ func main() {
 Start worker from example directory.
 
 ```bash
-celery -A worker worker --loglevel=info
+cd example
+celery -A worker worker --loglevel=debug --without-heartbeat --without-mingle
 ```
 
 Run test.py to test if celery worker is listening.
 
 ```bash
-python -m
+python example/test.py
+```
+
+Run test.go to test if celery worker can accept requests from go.
+
+```bash
+go run example/test.go
 ```
 
 ## Sample Celery Message
@@ -95,8 +130,6 @@ Decoded Body
     "kwargs": {}
 }
 ```
-
-
 
 ## LICENSE
 
