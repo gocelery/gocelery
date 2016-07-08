@@ -1,0 +1,12 @@
+language: go
+sudo: false
+go:
+    - tip
+install:
+    - go get gopkg.in/redis.v4
+    - go get github.com/satori/go.uuid
+services:
+    - redis
+matrix:
+    allow_failures:
+        - go: tip
