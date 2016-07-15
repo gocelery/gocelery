@@ -20,7 +20,7 @@ Currently broker and backend database must be same.
 
 ## Dependencies
 
-* go get gopkg.in/redis.v4
+* github.com/garyburd/redigo/redis
 * go get github.com/satori/go.uuid
 
 ## Celery Configuration
@@ -81,6 +81,12 @@ Run test.go to test if celery worker can accept requests from go.
 go run example/test.go
 ```
 
+Monitor Redis Message
+
+```bash
+redis-cli monitor
+```
+<!--
 ## Sample Celery Message
 
 Redis Message
@@ -130,6 +136,7 @@ Decoded Body
     "kwargs": {}
 }
 ```
+-->
 
 ## LICENSE
 

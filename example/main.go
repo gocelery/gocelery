@@ -8,19 +8,19 @@ import (
 )
 
 func main() {
-	celeryBroker, _ := gocelery.NewCeleryRedisBroker("localhost:6379", "", 0)
+	celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker)
-	asyncResult, err := celeryClient.Delay("worker.add", 3, 2)
+	asyncResult, err := celeryClient.Delay("worker.add", 3, 5)
 	if err != nil {
 		panic(err)
 	}
-	isReady := asyncResult.Ready()
+	isReady, _ := asyncResult.Ready()
 	for isReady == false {
-		isReady = asyncResult.Ready()
+		isReady, _ = asyncResult.Ready()
 		time.Sleep(2 * time.Second)
 	}
 
-	res := asyncResult.Get()
+	res, _ := asyncResult.Get()
 
 	fmt.Println(res)
 
