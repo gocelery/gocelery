@@ -13,8 +13,9 @@ import (
 // CeleryBroker is interface for celery broker
 type CeleryBroker interface {
 	Send(*CeleryMessage) error
-	GetResult(string) (interface{}, error)
 	GetTaskMessage() *TaskMessage
+	GetResult(string) (interface{}, error)
+	SetResult(taskID string, result *ResultMessage) error
 }
 
 // CeleryRedisBroker is Redis implementation of CeleryBroker
@@ -86,6 +87,18 @@ func (cb *CeleryRedisBroker) GetResult(taskID string) (interface{}, error) {
 		return nil, err
 	}
 	return val, nil
+}
+
+// SetResult pushes result back into broker
+func (cb *CeleryRedisBroker) SetResult(taskID string, result *ResultMessage) error {
+	resBytes, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+	conn := cb.Get()
+	defer conn.Close()
+	_, err = conn.Do("SETEX", fmt.Sprintf("celery-task-meta-%s", taskID), 86400, resBytes)
+	return err
 }
 
 // GetTaskMessage retrieve and decode task messages from broker

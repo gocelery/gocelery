@@ -42,6 +42,8 @@ CELERY_ENABLE_UTC=True,
 Run Celery Worker implemented in Go
 
 ```go
+// example/worker/main.go
+
 // Celery Task
 func add(a int, b int) int {
 	return a + b
@@ -60,9 +62,15 @@ func main() {
 	celeryClient.StopWorker()
 }
 ```
+```bash
+go run example/worker/main.go
+```
+
 
 Submit Task from Python Client
 ```python
+# example/test.py
+
 from celery import Celery
 
 app = Celery('tasks',
@@ -80,11 +88,17 @@ if __name__ == '__main__':
     print(ar.get())
 ```
 
+```bash
+python example/test.py
+```
+
 ## Celery Client Example
 
 Run Celery Worker implemented in Python
 
 ```python
+# example/worker.py
+
 from celery import Celery
 
 app = Celery('tasks',
@@ -98,6 +112,7 @@ def add(x, y):
 ```
 
 ```bash
+cd example
 celery -A worker worker --loglevel=debug --without-heartbeat --without-mingle
 ```
 
@@ -105,88 +120,42 @@ Submit Task from Go Client
 
 ```go
 func main() {
-    // create broker
-    celeryBroker, _ := gocelery.NewCeleryRedisBroker("localhost:6379", "", 0)
-    // create client
-    celeryClient, _ := gocelery.NewCeleryClient(celeryBroker)
-    // send task
-    asyncResult, _ := celeryClient.Delay("worker.add", 3, 2)
+	// create broker
+	celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
+	// create client
+	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, 0)
+	// send task
+	asyncResult, err := celeryClient.Delay("worker.add", 3, 5)
+	if err != nil {
+		panic(err)
+	}
 
-    // wait until result is ready
-    isReady := asyncResult.Ready()
-    for isReady == false {
-        isReady = asyncResult.Ready()
-        time.Sleep(1 * time.Second)
-    }
+	// wait until result is ready
+	isReady, _ := asyncResult.Ready()
+	for isReady == false {
+		isReady, _ = asyncResult.Ready()
+		time.Sleep(2 * time.Second)
+	}
 
-    // get the result
-    res := asyncResult.Get()
-    fmt.Println(res)
+	// get the result
+	res, _ := asyncResult.Get()
+
+	fmt.Println(res)
 }
 ```
 
-## Test
-
-Take a look at example code under example directory.
-
-Run celery worker in python
-```bash
-cd example
-celery -A worker worker --loglevel=debug --without-heartbeat --without-mingle
-```
-
-Submit celery task in python
-```bash
-python example/test.py
-```
-
-Run celery worker in Go
-```bash
-go run example/worker/main.go
-```
-
-Submit celery task in Go
 ```bash
 go run example/client/main.go
 ```
+
+## Test
 
 Monitor Redis Message
 ```bash
 redis-cli monitor
 ```
 
-<!--
-## Sample Celery Message
-
-Redis Message
-
-```javascript
-"LPUSH" "celery" "{
-    \"body\": """,
-    \"headers\": {},
-    \"content-type\": \"application/json\",
-    \"properties\": {
-        \"body_encoding\": \"base64\",
-        \"correlation_id\": \"3aa6ea4b-b761-4283-868b-e6f5a708a74f\",
-        \"reply_to\": \"283a98ec-8687-3125-9074-4374be1a09fa\",
-        \"delivery_info\": {
-            \"priority\": 0,
-            \"routing_key\": \"celery\",
-            \"exchange\": \"celery\"
-        },
-        \"delivery_mode\": 2,
-        \"delivery_tag\": \"decb2023-6301-4d98-aa35-b30f605cd0e4\"
-    },
-    \"content-encoding\": \"utf-8\"
-}"
-```
-
-Get Answer
-```javascript
-"GET" "celery-task-meta-c8535050-68f1-4e18-9f32-f52f1aab6d9b"
-```
-
-Decoded Body
+## Sample Celery Task Message
 
 ```javascript
 {
@@ -205,7 +174,6 @@ Decoded Body
     "kwargs": {}
 }
 ```
--->
 
 ## Contributing
 

@@ -109,8 +109,8 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) error {
 
 	// call method
 	res := taskFunc.Call(in)
-	log.Println(res[0])
 
 	// push result to broker
-	return nil
+	err := w.broker.SetResult(message.ID, NewResultMessage(res[0]))
+	return err
 }

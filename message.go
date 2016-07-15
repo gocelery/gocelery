@@ -3,6 +3,7 @@ package gocelery
 import (
 	"encoding/base64"
 	"encoding/json"
+	"reflect"
 	"time"
 
 	"github.com/satori/go.uuid"
@@ -106,4 +107,22 @@ func (tm *TaskMessage) Encode() (string, error) {
 	}
 	encodedData := base64.StdEncoding.EncodeToString(jsonData)
 	return encodedData, err
+}
+
+// ResultMessage is return message received from broker
+type ResultMessage struct {
+	Status    string        `json:"status"`
+	Traceback interface{}   `json:"traceback"`
+	Result    interface{}   `json:"result"`
+	Children  []interface{} `json:"children"`
+}
+
+// NewResultMessage returns valid celery result message from result
+func NewResultMessage(val reflect.Value) *ResultMessage {
+	return &ResultMessage{
+		Status:    "SUCCESS",
+		Traceback: nil,
+		Result:    GetRealValue(val),
+		Children:  nil,
+	}
 }

@@ -6,18 +6,20 @@ import (
 	"github.com/shicky/gocelery"
 )
 
-// Actual task implemented in Go
+// Celery Task
 func add(a int, b int) int {
 	return a + b
 }
 
-// Start Celery Worker in Go
 func main() {
 	celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
-	// starting with 2 workers
+	// Configure with 2 celery workers
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, 2)
+	// worker.add name reflects "add" task method found in "worker.py"
 	celeryClient.Register("worker.add", add)
+	// Start Worker - blocking method
 	go celeryClient.StartWorker()
+	// Wait 30 seconds and stop all workers
 	time.Sleep(30 * time.Second)
 	celeryClient.StopWorker()
 }
