@@ -1,15 +1,16 @@
 # gocelery
 
-Go Client for Celery Distributed Task Queue
+Go Client/Server for Celery Distributed Task Queue
 
 [![Build Status](https://travis-ci.org/shicky/gocelery.svg?branch=master)](https://travis-ci.org/shicky/gocelery)
+[![Go Report Card](https://goreportcard.com/badge/github.com/shicky/gocelery)](https://goreportcard.com/report/github.com/shicky/gocelery)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/shicky/go-gorilla-skeleton/blob/master/LICENSE)
 [![motivation](https://img.shields.io/badge/made%20with-%E2%99%A1-ff69b4.svg)](https://github.com/shicky/go-gorilla-skeleton)
 
 ## Why?
 
-Having being involved in a number of projects migrating server from python to go, I have realized many of celery distributed tasks cannot be easily converted.
-Simply because Python still has abundance of useful third-party libraries available.
+Having being involved in a number of projects migrating server from python to go, I have realized Go can help improve performance of existing python web applications.
+Celery distributed tasks are used heavily in many python web applications and this library allows you to implement celery workers in Go as well as being able to submit celery tasks in Go.
 
 ## Supported Brokers/Backend
 
@@ -20,7 +21,7 @@ Currently broker and backend database must be same.
 
 ## Dependencies
 
-* github.com/garyburd/redigo/redis
+* go get github.com/garyburd/redigo/redis
 * go get github.com/satori/go.uuid
 
 ## Celery Configuration
@@ -36,7 +37,71 @@ CELERY_RESULT_SERIALIZER='json',
 CELERY_ENABLE_UTC=True,
 ```
 
-## Example
+## Celery Worker Example
+
+Run Celery Worker implemented in Go
+
+```go
+// Celery Task
+func add(a int, b int) int {
+	return a + b
+}
+
+func main() {
+	celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
+    // Configure with 2 celery workers
+	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, 2)
+    // worker.add name reflects "add" task method found in "worker.py"
+	celeryClient.Register("worker.add", add)
+    // Start Worker - blocking method
+	go celeryClient.StartWorker()
+    // Wait 30 seconds and stop all workers
+	time.Sleep(30 * time.Second)
+	celeryClient.StopWorker()
+}
+```
+
+Submit Task from Python Client
+```python
+from celery import Celery
+
+app = Celery('tasks',
+    broker='redis://localhost:6379',
+    backend='redis://localhost:6379'
+)
+
+@app.task
+def add(x, y):
+    return x + y
+
+if __name__ == '__main__':
+    # submit celery task to be executed in Go workers
+    ar = add.apply_async((5456, 2878), serializer='json')
+    print(ar.get())
+```
+
+## Celery Client Example
+
+Run Celery Worker implemented in Python
+
+```python
+from celery import Celery
+
+app = Celery('tasks',
+    broker='redis://localhost:6379',
+    backend='redis://localhost:6379'
+)
+
+@app.task
+def add(x, y):
+    return x + y
+```
+
+```bash
+celery -A worker worker --loglevel=debug --without-heartbeat --without-mingle
+```
+
+Submit Task from Go Client
 
 ```go
 func main() {
@@ -62,30 +127,34 @@ func main() {
 
 ## Test
 
-Start worker from example directory.
+Take a look at example code under example directory.
 
+Run celery worker in python
 ```bash
 cd example
 celery -A worker worker --loglevel=debug --without-heartbeat --without-mingle
 ```
 
-Run test.py to test if celery worker is listening.
-
+Submit celery task in python
 ```bash
 python example/test.py
 ```
 
-Run test.go to test if celery worker can accept requests from go.
-
+Run celery worker in Go
 ```bash
-go run example/test.go
+go run example/worker/main.go
+```
+
+Submit celery task in Go
+```bash
+go run example/client/main.go
 ```
 
 Monitor Redis Message
-
 ```bash
 redis-cli monitor
 ```
+
 <!--
 ## Sample Celery Message
 
@@ -137,6 +206,16 @@ Decoded Body
 }
 ```
 -->
+
+## Contributing
+
+You are more than welcome to make any contributions.
+Please create Pull Request for any changes.
+
+I need help on following items:
+* Separating broker/backend
+* Supporting other brokers/backends such as RabbitMQ
+* Implementing more comprehensive tests
 
 ## LICENSE
 

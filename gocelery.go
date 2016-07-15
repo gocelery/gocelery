@@ -8,11 +8,30 @@ import (
 // CeleryClient provides API for sending celery tasks
 type CeleryClient struct {
 	broker CeleryBroker
+	worker *CeleryWorker
 }
 
 // NewCeleryClient creates new celery client
-func NewCeleryClient(broker CeleryBroker) (*CeleryClient, error) {
-	return &CeleryClient{broker}, nil
+func NewCeleryClient(broker CeleryBroker, numWorkers int) (*CeleryClient, error) {
+	return &CeleryClient{
+		broker,
+		NewCeleryWorker(broker, numWorkers),
+	}, nil
+}
+
+// Register task
+func (cc *CeleryClient) Register(name string, task interface{}) {
+	cc.worker.Register(name, task)
+}
+
+// StartWorker starts celery workers
+func (cc *CeleryClient) StartWorker() {
+	cc.worker.StartWorker()
+}
+
+// StopWorker stops celery workers
+func (cc *CeleryClient) StopWorker() {
+	cc.worker.StopWorker()
 }
 
 // Delay gets asynchronous result

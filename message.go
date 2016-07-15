@@ -80,6 +80,24 @@ func NewCeleryTask(task string, args ...interface{}) *TaskMessage {
 	}
 }
 
+// DecodeTaskMessage decodes base64 encrypted body and return TaskMessage object
+func DecodeTaskMessage(encodedBody string) (*TaskMessage, error) {
+	body, err := base64.StdEncoding.DecodeString(encodedBody)
+	if err != nil {
+		return nil, err
+	}
+
+	//log.Println(string(body))
+
+	var message TaskMessage
+	err = json.Unmarshal(body, &message)
+	if err != nil {
+		return nil, err
+	}
+	return &message, nil
+
+}
+
 // Encode returns base64 json encoded string
 func (tm *TaskMessage) Encode() (string, error) {
 	jsonData, err := json.Marshal(tm)
