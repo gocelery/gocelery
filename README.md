@@ -4,7 +4,7 @@ Go Client/Server for Celery Distributed Task Queue
 
 [![Build Status](https://travis-ci.org/shicky/gocelery.svg?branch=master)](https://travis-ci.org/shicky/gocelery)
 [![Go Report Card](https://goreportcard.com/badge/github.com/shicky/gocelery)](https://goreportcard.com/report/github.com/shicky/gocelery)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/shicky/go-gorilla-skeleton/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/shicky/gocelery/blob/master/LICENSE)
 [![motivation](https://img.shields.io/badge/made%20with-%E2%99%A1-ff69b4.svg)](https://github.com/shicky/go-gorilla-skeleton)
 
 ## Why?
@@ -23,6 +23,12 @@ Currently broker and backend database must be same.
 
 * go get github.com/garyburd/redigo/redis
 * go get github.com/satori/go.uuid
+
+## Go Celery Worker in Action
+
+Everyone loves screenshot
+
+![Go Celery Worker Screenshot](https://raw.githubusercontent.com/shicky/gocelery/master/screenshot.png)
 
 ## Celery Configuration
 
