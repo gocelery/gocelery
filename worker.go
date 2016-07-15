@@ -96,16 +96,15 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) error {
 	// construct arguments
 	in := make([]reflect.Value, messageNumArgs)
 	for i, arg := range message.Args {
-		origType := taskFunc.Type().In(i)
-		msgType := reflect.TypeOf(arg)
-		// special case - convert float64 to int
-		if origType == reflect.TypeOf(0) && msgType == reflect.TypeOf(0.0) {
-			// convert arg from float64 to int
-			//log.Println("converting to float")
-			in[i] = reflect.ValueOf(int(arg.(float64)))
-		} else {
-			in[i] = reflect.ValueOf(arg)
+		origType := taskFunc.Type().In(i).Kind()
+		msgType := reflect.TypeOf(arg).Kind()
+		// special case - convert float64 to int if applicable
+		// this is due to json limitation where all numbers are converted to float64
+		if origType == reflect.Int && msgType == reflect.Float64 {
+			arg = int(arg.(float64))
 		}
+
+		in[i] = reflect.ValueOf(arg)
 	}
 
 	// call method
