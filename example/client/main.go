@@ -13,8 +13,10 @@ import (
 func main() {
 	// create broker
 	celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
+	// create backend
+	celeryBackend := gocelery.NewCeleryRedisBackend("localhost:6379", "")
 	// create client
-	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, 0)
+	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 0)
 	// send task
 	asyncResult, err := celeryClient.Delay("worker.add", 3, 5)
 	if err != nil {

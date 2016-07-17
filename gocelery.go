@@ -7,15 +7,17 @@ import (
 
 // CeleryClient provides API for sending celery tasks
 type CeleryClient struct {
-	broker CeleryBroker
-	worker *CeleryWorker
+	broker  CeleryBroker
+	backend CeleryBackend
+	worker  *CeleryWorker
 }
 
 // NewCeleryClient creates new celery client
-func NewCeleryClient(broker CeleryBroker, numWorkers int) (*CeleryClient, error) {
+func NewCeleryClient(broker CeleryBroker, backend CeleryBackend, numWorkers int) (*CeleryClient, error) {
 	return &CeleryClient{
 		broker,
-		NewCeleryWorker(broker, numWorkers),
+		backend,
+		NewCeleryWorker(broker, backend, numWorkers),
 	}, nil
 }
 
@@ -46,19 +48,19 @@ func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, e
 	if err != nil {
 		return nil, err
 	}
-	return &AsyncResult{celeryTask.ID, cc.broker}, nil
+	return &AsyncResult{celeryTask.ID, cc.backend}, nil
 }
 
 // AsyncResult is pending result
 type AsyncResult struct {
-	taskID string
-	broker CeleryBroker
+	taskID  string
+	backend CeleryBackend
 }
 
 // Get gets actual result from redis
 // TODO: implement retries and timeout feature
 func (ar *AsyncResult) Get() (interface{}, error) {
-	res, err := ar.broker.GetResult(ar.taskID)
+	res, err := ar.backend.GetResult(ar.taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +80,7 @@ func (ar *AsyncResult) Get() (interface{}, error) {
 
 // Ready checks if actual result is ready
 func (ar *AsyncResult) Ready() (bool, error) {
-	val, err := ar.broker.GetResult(ar.taskID)
+	val, err := ar.backend.GetResult(ar.taskID)
 	if err != nil {
 		return false, err
 	}

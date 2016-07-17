@@ -10,6 +10,7 @@ import (
 // CeleryWorker represents distributed task worker
 type CeleryWorker struct {
 	broker          CeleryBroker
+	backend         CeleryBackend
 	numWorkers      int
 	registeredTasks map[string]interface{}
 	stopChannel     chan bool
@@ -17,9 +18,10 @@ type CeleryWorker struct {
 }
 
 // NewCeleryWorker returns new celery worker
-func NewCeleryWorker(broker CeleryBroker, numWorkers int) *CeleryWorker {
+func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int) *CeleryWorker {
 	return &CeleryWorker{
 		broker:          broker,
+		backend:         backend,
 		numWorkers:      numWorkers,
 		registeredTasks: make(map[string]interface{}),
 	}
@@ -111,6 +113,6 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) error {
 	res := taskFunc.Call(in)
 
 	// push result to broker
-	err := w.broker.SetResult(message.ID, NewResultMessage(res[0]))
+	err := w.backend.SetResult(message.ID, NewResultMessage(res[0]))
 	return err
 }

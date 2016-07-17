@@ -2,7 +2,6 @@ package gocelery
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -10,12 +9,10 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-// CeleryBroker is interface for celery broker
+// CeleryBroker is interface for celery broker database
 type CeleryBroker interface {
 	Send(*CeleryMessage) error
 	GetTaskMessage() *TaskMessage
-	GetResult(string) (interface{}, error)
-	SetResult(taskID string, result *ResultMessage) error
 }
 
 // CeleryRedisBroker is Redis implementation of CeleryBroker
@@ -74,31 +71,6 @@ func (cb *CeleryRedisBroker) Send(message *CeleryMessage) error {
 	}
 
 	return nil
-}
-
-// GetResult calls API to get asynchronous result
-// Should be called by AsyncResult
-func (cb *CeleryRedisBroker) GetResult(taskID string) (interface{}, error) {
-	//"celery-task-meta-" + taskID
-	conn := cb.Get()
-	defer conn.Close()
-	val, err := conn.Do("GET", fmt.Sprintf("celery-task-meta-%s", taskID))
-	if err != nil {
-		return nil, err
-	}
-	return val, nil
-}
-
-// SetResult pushes result back into broker
-func (cb *CeleryRedisBroker) SetResult(taskID string, result *ResultMessage) error {
-	resBytes, err := json.Marshal(result)
-	if err != nil {
-		return err
-	}
-	conn := cb.Get()
-	defer conn.Close()
-	_, err = conn.Do("SETEX", fmt.Sprintf("celery-task-meta-%s", taskID), 86400, resBytes)
-	return err
 }
 
 // GetTaskMessage retrieve and decode task messages from broker

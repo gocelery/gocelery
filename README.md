@@ -4,6 +4,7 @@ Go Client/Server for Celery Distributed Task Queue
 
 [![Build Status](https://travis-ci.org/shicky/gocelery.svg?branch=master)](https://travis-ci.org/shicky/gocelery)
 [![Go Report Card](https://goreportcard.com/badge/github.com/shicky/gocelery)](https://goreportcard.com/report/github.com/shicky/gocelery)
+[![GoDoc](https://godoc.org/github.com/shicky/gocelery?status.svg)](https://godoc.org/github.com/shicky/gocelery)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/shicky/gocelery/blob/master/LICENSE)
 [![motivation](https://img.shields.io/badge/made%20with-%E2%99%A1-ff69b4.svg)](https://github.com/shicky/go-gorilla-skeleton)
 
@@ -56,14 +57,17 @@ func add(a int, b int) int {
 }
 
 func main() {
+    // create broker
 	celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
-    // Configure with 2 celery workers
-	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, 2)
-    // worker.add name reflects "add" task method found in "worker.py"
+	// create backend
+	celeryBackend := gocelery.NewCeleryRedisBackend("localhost:6379", "")
+	// Configure with 2 celery workers
+	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 2)
+	// worker.add name reflects "add" task method found in "worker.py"
 	celeryClient.Register("worker.add", add)
-    // Start Worker - blocking method
+	// Start Worker - blocking method
 	go celeryClient.StartWorker()
-    // Wait 30 seconds and stop all workers
+	// Wait 30 seconds and stop all workers
 	time.Sleep(30 * time.Second)
 	celeryClient.StopWorker()
 }
@@ -126,26 +130,25 @@ Submit Task from Go Client
 
 ```go
 func main() {
-	// create broker
+    // create broker
 	celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
+	// create backend
+	celeryBackend := gocelery.NewCeleryRedisBackend("localhost:6379", "")
 	// create client
-	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, 0)
+	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 0)
 	// send task
 	asyncResult, err := celeryClient.Delay("worker.add", 3, 5)
 	if err != nil {
 		panic(err)
 	}
-
 	// wait until result is ready
 	isReady, _ := asyncResult.Ready()
 	for isReady == false {
 		isReady, _ = asyncResult.Ready()
 		time.Sleep(2 * time.Second)
 	}
-
 	// get the result
 	res, _ := asyncResult.Get()
-
 	fmt.Println(res)
 }
 ```
