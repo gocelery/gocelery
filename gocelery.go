@@ -60,6 +60,7 @@ type AsyncResult struct {
 }
 
 // Get gets actual result from redis
+// It blocks for period of time set by timeout and return error if unavailable
 func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
 	timeoutChan := time.After(timeout)
 	for {
@@ -69,23 +70,35 @@ func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
 			return nil, err
 		default:
 			// process
-			val, err := ar.backend.GetResult(ar.taskID)
+			val, err := ar.AsyncGet()
 			if err != nil {
 				log.Printf("error getting result %v", err)
 				continue
 			}
 			if val != nil {
-				log.Printf("val: %s\n", string(val.([]byte)))
-				var resMap map[string]interface{}
-				json.Unmarshal(val.([]byte), &resMap)
-				if resMap["status"] != "SUCCESS" {
-					log.Printf("error response status %v", resMap)
-					continue
-				}
-				return resMap["result"], nil
+				continue
 			}
+			return val, nil
 		}
 	}
+}
+
+// AsyncGet gets actual result from redis and returns nil if not available
+func (ar *AsyncResult) AsyncGet() (interface{}, error) {
+	// process
+	val, err := ar.backend.GetResult(ar.taskID)
+	if err != nil {
+		return nil, err
+	}
+	if val == nil {
+		return nil, err
+	}
+	var resMap map[string]interface{}
+	json.Unmarshal(val.([]byte), &resMap)
+	if resMap["status"] != "SUCCESS" {
+		return nil, fmt.Errorf("error response status %v", resMap)
+	}
+	return resMap["result"], nil
 }
 
 // Ready checks if actual result is ready
