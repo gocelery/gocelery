@@ -5,6 +5,8 @@ import (
 	"log"
 	"reflect"
 	"sync"
+
+	"github.com/satori/go.uuid"
 )
 
 // CeleryWorker represents distributed task worker
@@ -32,6 +34,8 @@ func (w *CeleryWorker) StartWorker() {
 	w.stopChannel = make(chan bool, 1)
 	w.workWG.Add(w.numWorkers)
 	for i := 0; i < w.numWorkers; i++ {
+		// generate uuid
+		workerID := uuid.NewV4().String()
 		go func() {
 			defer w.workWG.Done()
 			for {
@@ -45,14 +49,21 @@ func (w *CeleryWorker) StartWorker() {
 						continue
 					}
 
-					log.Printf("task message received: %v\n", taskMessage)
+					log.Printf("WORKER %s task message received: %v\n", workerID, taskMessage)
 
-					err := w.RunTask(taskMessage)
+					// run task
+					val, err := w.RunTask(taskMessage)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
 
+					// push result to broker
+					err = w.backend.SetResult(taskMessage.ID, NewResultMessage(*val))
+					if err != nil {
+						log.Println(err)
+						continue
+					}
 				}
 			}
 		}()
@@ -65,6 +76,11 @@ func (w *CeleryWorker) StartWorker() {
 func (w *CeleryWorker) StopWorker() {
 	// stops celery workers
 	w.stopChannel <- true
+}
+
+// GetNumWorkers returns number of currently running workers
+func (w *CeleryWorker) GetNumWorkers() int {
+	return w.numWorkers
 }
 
 // Register registers tasks (functions)
@@ -82,10 +98,10 @@ func (w *CeleryWorker) GetTask(name string) interface{} {
 }
 
 // RunTask runs celery task
-func (w *CeleryWorker) RunTask(message *TaskMessage) error {
+func (w *CeleryWorker) RunTask(message *TaskMessage) (*reflect.Value, error) {
 	task := w.GetTask(message.Task)
 	if task == nil {
-		return fmt.Errorf("task %s is not registered", message.Task)
+		return nil, fmt.Errorf("task %s is not registered", message.Task)
 	}
 	taskFunc := reflect.ValueOf(task)
 
@@ -93,7 +109,7 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) error {
 	numArgs := taskFunc.Type().NumIn()
 	messageNumArgs := len(message.Args)
 	if numArgs != messageNumArgs {
-		return fmt.Errorf("Number of task arguments %d does not match number of message arguments %d", numArgs, messageNumArgs)
+		return nil, fmt.Errorf("Number of task arguments %d does not match number of message arguments %d", numArgs, messageNumArgs)
 	}
 	// construct arguments
 	in := make([]reflect.Value, messageNumArgs)
@@ -111,8 +127,5 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) error {
 
 	// call method
 	res := taskFunc.Call(in)
-
-	// push result to broker
-	err := w.backend.SetResult(message.ID, NewResultMessage(res[0]))
-	return err
+	return &res[0], nil
 }
