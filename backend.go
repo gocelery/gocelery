@@ -38,7 +38,7 @@ func (cb *CeleryRedisBackend) GetResult(taskID string) (interface{}, error) {
 	return val, nil
 }
 
-// SetResult pushes result back into broker
+// SetResult pushes result back into backend
 func (cb *CeleryRedisBackend) SetResult(taskID string, result *ResultMessage) error {
 	resBytes, err := json.Marshal(result)
 	if err != nil {

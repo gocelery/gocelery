@@ -3,6 +3,8 @@ package gocelery
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
 )
 
 // CeleryClient provides API for sending celery tasks
@@ -58,24 +60,32 @@ type AsyncResult struct {
 }
 
 // Get gets actual result from redis
-// TODO: implement retries and timeout feature
-func (ar *AsyncResult) Get() (interface{}, error) {
-	res, err := ar.backend.GetResult(ar.taskID)
-	if err != nil {
-		return nil, err
+func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
+	timeoutChan := time.After(timeout)
+	for {
+		select {
+		case <-timeoutChan:
+			err := fmt.Errorf("%v timeout getting result for %s", timeout, ar.taskID)
+			return nil, err
+		default:
+			// process
+			val, err := ar.backend.GetResult(ar.taskID)
+			if err != nil {
+				log.Printf("error getting result %v", err)
+				continue
+			}
+			if val != nil {
+				log.Printf("val: %s\n", string(val.([]byte)))
+				var resMap map[string]interface{}
+				json.Unmarshal(val.([]byte), &resMap)
+				if resMap["status"] != "SUCCESS" {
+					log.Printf("error response status %v", resMap)
+					continue
+				}
+				return resMap["result"], nil
+			}
+		}
 	}
-	if res == nil {
-		return nil, fmt.Errorf("result not yet available")
-	}
-
-	//log.Printf("res: %s\n", string(res.([]byte)))
-
-	var resMap map[string]interface{}
-	json.Unmarshal(res.([]byte), &resMap)
-	if resMap["status"] != "SUCCESS" {
-		return nil, fmt.Errorf("task queue failed: %v", resMap)
-	}
-	return resMap["result"], nil
 }
 
 // Ready checks if actual result is ready

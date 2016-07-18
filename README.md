@@ -6,7 +6,7 @@ Go Client/Server for Celery Distributed Task Queue
 [![Go Report Card](https://goreportcard.com/badge/github.com/shicky/gocelery)](https://goreportcard.com/report/github.com/shicky/gocelery)
 [![GoDoc](https://godoc.org/github.com/shicky/gocelery?status.svg)](https://godoc.org/github.com/shicky/gocelery)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/shicky/gocelery/blob/master/LICENSE)
-[![motivation](https://img.shields.io/badge/made%20with-%E2%99%A1-ff69b4.svg)](https://github.com/shicky/go-gorilla-skeleton)
+[![motivation](https://img.shields.io/badge/made%20with-%E2%99%A1-ff69b4.svg)](https://github.com/shicky/gocelery)
 
 ## Why?
 
@@ -141,15 +141,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// wait until result is ready
+    // check if result is ready
 	isReady, _ := asyncResult.Ready()
-	for isReady == false {
-		isReady, _ = asyncResult.Ready()
-		time.Sleep(2 * time.Second)
-	}
-	// get the result
-	res, _ := asyncResult.Get()
-	fmt.Println(res)
+	fmt.Printf("ready status %v\n", isReady)
+
+    // get result with 5s timeout
+	res, err = asyncResult.Get(5 * time.Second)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+        fmt.Println(res)
+    }
 }
 ```
 
@@ -190,7 +192,6 @@ You are more than welcome to make any contributions.
 Please create Pull Request for any changes.
 
 I need help on following items:
-* Separating broker/backend
 * Supporting other brokers/backends such as RabbitMQ
 * Implementing more comprehensive tests
 

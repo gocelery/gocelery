@@ -23,15 +23,21 @@ func main() {
 		panic(err)
 	}
 
-	// wait until result is ready
+	// check if result is ready
 	isReady, _ := asyncResult.Ready()
-	for isReady == false {
-		isReady, _ = asyncResult.Ready()
-		time.Sleep(2 * time.Second)
+	fmt.Printf("ready status %v\n", isReady)
+
+	// get result with 2ms timeout
+	res, err := asyncResult.Get(200 * time.Millisecond)
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	// get the result
-	res, _ := asyncResult.Get()
-
-	fmt.Println(res)
+	// get result with 5s timeout
+	res, err = asyncResult.Get(5 * time.Second)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(res)
+	}
 }
