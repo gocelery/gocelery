@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/shicky/gocelery"
@@ -32,6 +33,6 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		fmt.Printf("Result: %v\n", res)
+		fmt.Printf("Result: %v of type: %v\n", res, reflect.TypeOf(res))
 	}
 }
