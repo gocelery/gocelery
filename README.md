@@ -14,21 +14,16 @@ Go Client/Server for Celery Distributed Task Queue
 Having being involved in a number of projects migrating server from python to go, I have realized Go can help improve performance of existing python web applications.
 Celery distributed tasks are used heavily in many python web applications and this library allows you to implement celery workers in Go as well as being able to submit celery tasks in Go.
 
-## Supported Brokers/Backend
-
-We are currently only supporting Redis but will add support for RabbitMQ soon.
-Currently broker and backend database must be same.
-
-* Redis
-
-## Dependencies
-
-* go get github.com/garyburd/redigo/redis
-* go get github.com/satori/go.uuid
+You can also use this library as pure go distributed task queue.
 
 ## Go Celery Worker in Action
 
 ![demo](https://raw.githubusercontent.com/shicky/gocelery/master/demo.gif)
+
+## Supported Brokers/Backends
+
+* Redis (broker/backend)
+
 
 ## Celery Configuration
 
