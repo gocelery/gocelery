@@ -28,9 +28,7 @@ Currently broker and backend database must be same.
 
 ## Go Celery Worker in Action
 
-Everyone loves screenshot
-
-![Go Celery Worker Screenshot](https://raw.githubusercontent.com/shicky/gocelery/master/screenshot.png)
+[![asciicast](https://asciinema.org/a/epwmaixw6akbcepzcqiewzefc.png)](https://asciinema.org/a/epwmaixw6akbcepzcqiewzefc)
 
 ## Celery Configuration
 

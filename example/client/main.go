@@ -25,13 +25,13 @@ func main() {
 
 	// check if result is ready
 	isReady, _ := asyncResult.Ready()
-	fmt.Printf("ready status %v\n", isReady)
+	fmt.Printf("Ready status: %v\n", isReady)
 
-	// get result with 5s timeout
-	res, err := asyncResult.Get(5 * time.Second)
+	// get result with 1s timeout
+	res, err := asyncResult.Get(1 * time.Second)
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		fmt.Println(res)
+		fmt.Printf("Result: %v\n", res)
 	}
 }
