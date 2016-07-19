@@ -1,0 +1,85 @@
+package gocelery
+
+import (
+	"encoding/json"
+	"fmt"
+	"math/rand"
+	"reflect"
+	"testing"
+
+	"github.com/satori/go.uuid"
+)
+
+func TestGetResult(t *testing.T) {
+	backend := NewCeleryRedisBackend("localhost:6379", "")
+	taskID := uuid.NewV4().String()
+	value := rand.Intn(10)
+	resultMessage := NewResultMessage(reflect.ValueOf(value))
+	messageBytes, err := json.Marshal(resultMessage)
+	if err != nil {
+		t.Errorf("error marshalling result message: %v", err)
+	}
+	conn := backend.Get()
+	defer conn.Close()
+	_, err = conn.Do("SETEX", fmt.Sprintf("celery-task-meta-%s", taskID), 86400, messageBytes)
+	if err != nil {
+		t.Errorf("error setting result message to celery: %v", err)
+	}
+	// get result
+	res, err := backend.GetResult(taskID)
+	if err != nil {
+		t.Errorf("error getting result from backend: %v", err)
+	}
+	if !reflect.DeepEqual(res, resultMessage) {
+		t.Errorf("result message received %v is different from original %v", res, resultMessage)
+	}
+}
+
+func TestSetResult(t *testing.T) {
+	backend := NewCeleryRedisBackend("localhost:6379", "")
+	taskID := uuid.NewV4().String()
+	value := rand.Intn(10)
+	resultMessage := NewResultMessage(reflect.ValueOf(value))
+	// set result
+	err := backend.SetResult(taskID, resultMessage)
+	if err != nil {
+		t.Errorf("error setting result to backend: %v", err)
+	}
+	conn := backend.Get()
+	defer conn.Close()
+	val, err := conn.Do("GET", fmt.Sprintf("celery-task-meta-%s", taskID))
+	if err != nil {
+		t.Errorf("error getting data from redis: %v", err)
+	}
+	if val == nil {
+		t.Errorf("result not available from redis")
+	}
+	var res ResultMessage
+	err = json.Unmarshal(val.([]byte), &res)
+	if err != nil {
+		t.Errorf("error parsing json result")
+	}
+	if !reflect.DeepEqual(&res, resultMessage) {
+		t.Errorf("result message received %v is different from original %v", &res, resultMessage)
+	}
+}
+
+func TestSetGetResult(t *testing.T) {
+	backend := NewCeleryRedisBackend("localhost:6379", "")
+	taskID := uuid.NewV4().String()
+	value := rand.Intn(10)
+	resultMessage := NewResultMessage(reflect.ValueOf(value))
+	// set result
+	err := backend.SetResult(taskID, resultMessage)
+	if err != nil {
+		t.Errorf("error setting result to backend: %v", err)
+	}
+	// get result
+	res, err := backend.GetResult(taskID)
+	if err != nil {
+		t.Errorf("error getting result from backend: %v", err)
+	}
+	if !reflect.DeepEqual(res, resultMessage) {
+		t.Errorf("result message received %v is different from original %v", res, resultMessage)
+	}
+}

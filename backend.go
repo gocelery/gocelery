@@ -9,7 +9,7 @@ import (
 
 // CeleryBackend is interface for celery backend database
 type CeleryBackend interface {
-	GetResult(string) (interface{}, error)
+	GetResult(string) (*ResultMessage, error)
 	SetResult(taskID string, result *ResultMessage) error
 }
 
@@ -27,7 +27,7 @@ func NewCeleryRedisBackend(host, pass string) *CeleryRedisBackend {
 
 // GetResult calls API to get asynchronous result
 // Should be called by AsyncResult
-func (cb *CeleryRedisBackend) GetResult(taskID string) (interface{}, error) {
+func (cb *CeleryRedisBackend) GetResult(taskID string) (*ResultMessage, error) {
 	//"celery-task-meta-" + taskID
 	conn := cb.Get()
 	defer conn.Close()
@@ -35,7 +35,15 @@ func (cb *CeleryRedisBackend) GetResult(taskID string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return val, nil
+	if val == nil {
+		return nil, fmt.Errorf("result not available")
+	}
+	var resultMessage ResultMessage
+	err = json.Unmarshal(val.([]byte), &resultMessage)
+	if err != nil {
+		return nil, err
+	}
+	return &resultMessage, nil
 }
 
 // SetResult pushes result back into backend

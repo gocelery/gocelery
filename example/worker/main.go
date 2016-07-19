@@ -23,6 +23,6 @@ func main() {
 	// Start Worker - blocking method
 	go celeryClient.StartWorker()
 	// Wait 30 seconds and stop all workers
-	time.Sleep(5 * time.Second)
+	time.Sleep(30 * time.Second)
 	celeryClient.StopWorker()
 }

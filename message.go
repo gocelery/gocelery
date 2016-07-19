@@ -3,6 +3,7 @@ package gocelery
 import (
 	"encoding/base64"
 	"encoding/json"
+	"log"
 	"reflect"
 	"time"
 
@@ -59,6 +60,32 @@ func NewCeleryMessage(encodedTaskMessage string) *CeleryMessage {
 	}
 }
 
+// GetTaskMessage retrieve and decode task messages from broker
+func (message *CeleryMessage) GetTaskMessage() *TaskMessage {
+	// ensure content-type is 'application/json'
+	if message.ContentType != "application/json" {
+		log.Println("unsupported content type " + message.ContentType)
+		return nil
+	}
+	// ensure body encoding is base64
+	if message.Properties.BodyEncoding != "base64" {
+		log.Println("unsupported body encoding " + message.Properties.BodyEncoding)
+		return nil
+	}
+	// ensure content encoding is utf-8
+	if message.ContentEncoding != "utf-8" {
+		log.Println("unsupported encoding " + message.ContentEncoding)
+		return nil
+	}
+	// decode body
+	taskMessage, err := DecodeTaskMessage(message.Body)
+	if err != nil {
+		log.Println("failed to decode task message")
+		return nil
+	}
+	return taskMessage
+}
+
 // TaskMessage is celery-compatible message
 type TaskMessage struct {
 	ID      string                 `json:"id"`
@@ -69,8 +96,8 @@ type TaskMessage struct {
 	ETA     string                 `json:"eta"`
 }
 
-// NewCeleryTask creates new celery task message
-func NewCeleryTask(task string, args ...interface{}) *TaskMessage {
+// NewTaskMessage creates new celery task message
+func NewTaskMessage(task string, args ...interface{}) *TaskMessage {
 	return &TaskMessage{
 		ID:      uuid.NewV4().String(),
 		Task:    task,

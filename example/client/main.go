@@ -27,14 +27,8 @@ func main() {
 	isReady, _ := asyncResult.Ready()
 	fmt.Printf("ready status %v\n", isReady)
 
-	// get result with 2ms timeout
-	res, err := asyncResult.Get(200 * time.Millisecond)
-	if err != nil {
-		fmt.Println(err)
-	}
-
 	// get result with 5s timeout
-	res, err = asyncResult.Get(5 * time.Second)
+	res, err := asyncResult.Get(5 * time.Second)
 	if err != nil {
 		fmt.Println(err)
 	} else {

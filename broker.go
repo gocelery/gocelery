@@ -2,7 +2,7 @@ package gocelery
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"sync"
 	"time"
 
@@ -11,8 +11,8 @@ import (
 
 // CeleryBroker is interface for celery broker database
 type CeleryBroker interface {
-	Send(*CeleryMessage) error
-	GetTaskMessage() *TaskMessage
+	SendCeleryMessage(*CeleryMessage) error
+	GetCeleryMessage() (*CeleryMessage, error)
 }
 
 // CeleryRedisBroker is Redis implementation of CeleryBroker
@@ -56,65 +56,39 @@ func NewCeleryRedisBroker(host, pass string) *CeleryRedisBroker {
 	}
 }
 
-// Send CeleryMessage to broker
-func (cb *CeleryRedisBroker) Send(message *CeleryMessage) error {
+// SendCeleryMessage sends CeleryMessage to broker
+func (cb *CeleryRedisBroker) SendCeleryMessage(message *CeleryMessage) error {
 	jsonBytes, err := json.Marshal(message)
 	if err != nil {
 		return err
 	}
 	conn := cb.Get()
 	defer conn.Close()
-
 	_, err = conn.Do("LPUSH", cb.queueName, jsonBytes)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-// GetTaskMessage retrieve and decode task messages from broker
-func (cb *CeleryRedisBroker) GetTaskMessage() *TaskMessage {
+// GetCeleryMessage gets celery message from broker
+func (cb *CeleryRedisBroker) GetCeleryMessage() (*CeleryMessage, error) {
 	conn := cb.Get()
 	defer conn.Close()
 	messageJSON, err := conn.Do("BLPOP", cb.queueName, "1")
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
 	if messageJSON == nil {
-		return nil
+		return nil, fmt.Errorf("null message received from redis")
 	}
 	messageList := messageJSON.([]interface{})
 	// check for celery message
 	if string(messageList[0].([]byte)) != "celery" {
-		log.Println("not a celery message!")
-		return nil
+		return nil, fmt.Errorf("not a celery message: %v", messageList[0])
 	}
-
 	// parse
 	var message CeleryMessage
 	json.Unmarshal(messageList[1].([]byte), &message)
-	// ensure content-type is 'application/json'
-	if message.ContentType != "application/json" {
-		log.Println("unsupported content type " + message.ContentType)
-		return nil
-	}
-	// ensure body encoding is base64
-	if message.Properties.BodyEncoding != "base64" {
-		log.Println("unsupported body encoding " + message.Properties.BodyEncoding)
-		return nil
-	}
-	// ensure content encoding is utf-8
-	if message.ContentEncoding != "utf-8" {
-		log.Println("unsupported encoding " + message.ContentEncoding)
-		return nil
-	}
-	// decode body
-	taskMessage, err := DecodeTaskMessage(message.Body)
-	if err != nil {
-		log.Println("failed to decode task message")
-		return nil
-	}
-
-	return taskMessage
+	return &message, nil
 }

@@ -44,7 +44,11 @@ func (w *CeleryWorker) StartWorker() {
 					return
 				default:
 					// process messages
-					taskMessage := w.broker.GetTaskMessage()
+					celeryMessage, err := w.broker.GetCeleryMessage()
+					if err != nil {
+						continue
+					}
+					taskMessage := celeryMessage.GetTaskMessage()
 					if taskMessage == nil {
 						continue
 					}

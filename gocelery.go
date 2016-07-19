@@ -1,9 +1,7 @@
 package gocelery
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -40,13 +38,13 @@ func (cc *CeleryClient) StopWorker() {
 
 // Delay gets asynchronous result
 func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, error) {
-	celeryTask := NewCeleryTask(task, args...)
+	celeryTask := NewTaskMessage(task, args...)
 	encodedMessage, err := celeryTask.Encode()
 	if err != nil {
 		return nil, err
 	}
 	celeryMessage := NewCeleryMessage(encodedMessage)
-	err = cc.broker.Send(celeryMessage)
+	err = cc.broker.SendCeleryMessage(celeryMessage)
 	if err != nil {
 		return nil, err
 	}
@@ -71,11 +69,7 @@ func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
 		default:
 			// process
 			val, err := ar.AsyncGet()
-			if err != nil {
-				log.Printf("error getting result %v", err)
-				continue
-			}
-			if val != nil {
+			if err != nil || val == nil {
 				continue
 			}
 			return val, nil
@@ -93,12 +87,10 @@ func (ar *AsyncResult) AsyncGet() (interface{}, error) {
 	if val == nil {
 		return nil, err
 	}
-	var resMap map[string]interface{}
-	json.Unmarshal(val.([]byte), &resMap)
-	if resMap["status"] != "SUCCESS" {
-		return nil, fmt.Errorf("error response status %v", resMap)
+	if val.Status != "SUCCESS" {
+		return nil, fmt.Errorf("error response status %v", val)
 	}
-	return resMap["result"], nil
+	return val.Result, nil
 }
 
 // Ready checks if actual result is ready
