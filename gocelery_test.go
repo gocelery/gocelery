@@ -3,7 +3,6 @@ package gocelery
 import (
 	"math/rand"
 	"reflect"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -58,11 +57,9 @@ func TestWorkerClient(t *testing.T) {
 		t.Errorf("result should be available by now")
 	}
 
-	//BUG - result is always returned in string?
-	actual, err := strconv.Atoi(val.(string))
-	if err != nil {
-		t.Errorf("failed to convert result to string")
-	}
+	// number is always returned as float64
+	// due to json parser limitation in golang
+	actual := int(val.(float64))
 
 	if actual != expected {
 		t.Errorf("returned result %v is different from expected value %v", actual, expected)
