@@ -35,12 +35,31 @@ func (b *AMQPCeleryBackend) SetResult(taskID string, result *ResultMessage) erro
 	//queueName := taskID
 	queueName := strings.Replace(taskID, "-", "", -1)
 
-	_, err := b.QueueDeclare(queueName, true, false, false, false, nil)
+	// autodelete is automatically set to true by python
+	// (406) PRECONDITION_FAILED - inequivalent arg 'durable' for queue 'bc58c0d895c7421eb7cb2b9bbbd8b36f' in vhost '/': received 'true' but current is 'false'
+
+	args := amqp.Table{"x-expires": int32(86400000)}
+	_, err := b.QueueDeclare(
+		queueName, // name
+		true,      // durable
+		true,      // autoDelete
+		false,     // exclusive
+		false,     // noWait
+		args,      // args
+	)
 	if err != nil {
 		return err
 	}
 
-	err = b.ExchangeDeclare("", "direct", true, false, false, false, nil)
+	err = b.ExchangeDeclare(
+		"default",
+		"direct",
+		true,
+		true,
+		false,
+		false,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
@@ -62,19 +81,6 @@ func (b *AMQPCeleryBackend) SetResult(taskID string, result *ResultMessage) erro
 		false,
 		false,
 		message,
-	)
-}
-
-// CreateExchange declares AMQP exchange with stored configuration
-func (b *AMQPCeleryBackend) CreateExchange() error {
-	return b.ExchangeDeclare(
-		b.exchange.Name,
-		b.exchange.Type,
-		b.exchange.Durable,
-		b.exchange.AutoDelete,
-		false,
-		false,
-		nil,
 	)
 }
 

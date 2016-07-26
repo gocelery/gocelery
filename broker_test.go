@@ -16,6 +16,14 @@ func makeCeleryMessage() (*CeleryMessage, error) {
 	return NewCeleryMessage(encodedTaskMessage), nil
 }
 
+func getBrokers() []CeleryBroker {
+	return []CeleryBroker{
+		NewRedisCeleryBroker("localhost:6379", ""),
+		NewAMQPCeleryBroker("amqp://"),
+	}
+}
+
+// Redis specific test
 func TestSend(t *testing.T) {
 	broker := NewRedisCeleryBroker("localhost:6379", "")
 	celeryMessage, err := makeCeleryMessage()
@@ -44,6 +52,7 @@ func TestSend(t *testing.T) {
 	}
 }
 
+// Redis specific test
 func TestGet(t *testing.T) {
 	broker := NewRedisCeleryBroker("localhost:6379", "")
 	celeryMessage, err := makeCeleryMessage()
@@ -70,6 +79,7 @@ func TestGet(t *testing.T) {
 	}
 }
 
+// Redis client specific test
 func TestSendGet(t *testing.T) {
 	broker := NewRedisCeleryBroker("localhost:6379", "")
 	celeryMessage, err := makeCeleryMessage()
@@ -80,11 +90,13 @@ func TestSendGet(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to send celery message to broker: %v", err)
 	}
-	message, err := broker.GetCeleryMessage()
+
+	message, err := broker.GetTaskMessage()
 	if err != nil {
 		t.Errorf("failed to get celery message from broker: %v", err)
 	}
-	if !reflect.DeepEqual(message, celeryMessage) {
-		t.Errorf("received message %v different from original message %v", message, celeryMessage)
+	originalMessage := celeryMessage.GetTaskMessage()
+	if !reflect.DeepEqual(message, originalMessage) {
+		t.Errorf("received message %v different from original message %v", message, originalMessage)
 	}
 }

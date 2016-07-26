@@ -22,9 +22,10 @@ You can also use this library as pure go distributed task queue.
 
 ## Supported Brokers/Backends
 
+Now supporting both Redis and AMQP!!
+
 * Redis (broker/backend)
-* AMQP (broker)
-* AMQP (backend) - WIP
+* AMQP (broker/backend)
 
 ## Celery Configuration
 
@@ -200,10 +201,6 @@ redis-cli monitor
 
 You are more than welcome to make any contributions.
 Please create Pull Request for any changes.
-
-I need help on following items:
-* Supporting other brokers/backends such as RabbitMQ
-* Implementing more comprehensive tests
 
 ## LICENSE
 

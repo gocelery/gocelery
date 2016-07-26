@@ -16,7 +16,8 @@ func main() {
 	//celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
 	celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
 	// create backend
-	celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+	//celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+	celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
 	// Configure with 2 celery workers
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 2)
 	// worker.add name reflects "add" task method found in "worker.py"
