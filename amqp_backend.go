@@ -2,6 +2,7 @@ package gocelery
 
 import (
 	"encoding/json"
+	"log"
 	"strings"
 	"time"
 
@@ -24,7 +25,54 @@ func NewAMQPCeleryBackend(host string) *AMQPCeleryBackend {
 
 // GetResult retrieves result from AMQP queue
 func (b *AMQPCeleryBackend) GetResult(taskID string) (*ResultMessage, error) {
-	return nil, nil
+	queueName := strings.Replace(taskID, "-", "", -1)
+	args := amqp.Table{"x-expires": int32(86400000)}
+	_, err := b.QueueDeclare(
+		queueName, // name
+		true,      // durable
+		true,      // autoDelete
+		false,     // exclusive
+		false,     // noWait
+		args,      // args
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	err = b.ExchangeDeclare(
+		"default",
+		"direct",
+		true,
+		true,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// open channel temporarily
+	channel, err := b.Consume(queueName, "", false, false, false, false, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println("Getting result from channel")
+
+	delivery := <-channel
+	delivery.Ack(false)
+
+	log.Println("GOT result!")
+
+	var resultMessage ResultMessage
+	if err := json.Unmarshal(delivery.Body, &resultMessage); err != nil {
+		return nil, err
+	}
+
+	log.Println(resultMessage)
+
+	return &resultMessage, nil
 }
 
 // SetResult sets result back to AMQP queue
@@ -35,12 +83,31 @@ func (b *AMQPCeleryBackend) SetResult(taskID string, result *ResultMessage) erro
 	//queueName := taskID
 	queueName := strings.Replace(taskID, "-", "", -1)
 
-	_, err := b.QueueDeclare(queueName, true, false, false, false, nil)
+	// autodelete is automatically set to true by python
+	// (406) PRECONDITION_FAILED - inequivalent arg 'durable' for queue 'bc58c0d895c7421eb7cb2b9bbbd8b36f' in vhost '/': received 'true' but current is 'false'
+
+	args := amqp.Table{"x-expires": int32(86400000)}
+	_, err := b.QueueDeclare(
+		queueName, // name
+		true,      // durable
+		true,      // autoDelete
+		false,     // exclusive
+		false,     // noWait
+		args,      // args
+	)
 	if err != nil {
 		return err
 	}
 
-	err = b.ExchangeDeclare("", "direct", true, false, false, false, nil)
+	err = b.ExchangeDeclare(
+		"default",
+		"direct",
+		true,
+		true,
+		false,
+		false,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
@@ -62,19 +129,6 @@ func (b *AMQPCeleryBackend) SetResult(taskID string, result *ResultMessage) erro
 		false,
 		false,
 		message,
-	)
-}
-
-// CreateExchange declares AMQP exchange with stored configuration
-func (b *AMQPCeleryBackend) CreateExchange() error {
-	return b.ExchangeDeclare(
-		b.exchange.Name,
-		b.exchange.Type,
-		b.exchange.Durable,
-		b.exchange.AutoDelete,
-		false,
-		false,
-		nil,
 	)
 }
 

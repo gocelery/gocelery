@@ -16,6 +16,15 @@ func makeCeleryMessage() (*CeleryMessage, error) {
 	return NewCeleryMessage(encodedTaskMessage), nil
 }
 
+// test all brokers
+func getBrokers() []CeleryBroker {
+	return []CeleryBroker{
+		NewRedisCeleryBroker("localhost:6379", ""),
+		NewAMQPCeleryBroker("amqp://"),
+	}
+}
+
+// TestSend is Redis specific test that sets CeleryMessage to queue
 func TestSend(t *testing.T) {
 	broker := NewRedisCeleryBroker("localhost:6379", "")
 	celeryMessage, err := makeCeleryMessage()
@@ -44,6 +53,7 @@ func TestSend(t *testing.T) {
 	}
 }
 
+// TestGet is Redis specific test that gets CeleryMessage from queue
 func TestGet(t *testing.T) {
 	broker := NewRedisCeleryBroker("localhost:6379", "")
 	celeryMessage, err := makeCeleryMessage()
@@ -70,21 +80,25 @@ func TestGet(t *testing.T) {
 	}
 }
 
+// TestSendGet tests set/get features for all brokers
 func TestSendGet(t *testing.T) {
-	broker := NewRedisCeleryBroker("localhost:6379", "")
-	celeryMessage, err := makeCeleryMessage()
-	if err != nil || celeryMessage == nil {
-		t.Errorf("failed to construct celery message: %v", err)
-	}
-	err = broker.SendCeleryMessage(celeryMessage)
-	if err != nil {
-		t.Errorf("failed to send celery message to broker: %v", err)
-	}
-	message, err := broker.GetCeleryMessage()
-	if err != nil {
-		t.Errorf("failed to get celery message from broker: %v", err)
-	}
-	if !reflect.DeepEqual(message, celeryMessage) {
-		t.Errorf("received message %v different from original message %v", message, celeryMessage)
+	for _, broker := range getBrokers() {
+		celeryMessage, err := makeCeleryMessage()
+		if err != nil || celeryMessage == nil {
+			t.Errorf("failed to construct celery message: %v", err)
+		}
+		err = broker.SendCeleryMessage(celeryMessage)
+		if err != nil {
+			t.Errorf("failed to send celery message to broker: %v", err)
+		}
+
+		message, err := broker.GetTaskMessage()
+		if err != nil {
+			t.Errorf("failed to get celery message from broker: %v", err)
+		}
+		originalMessage := celeryMessage.GetTaskMessage()
+		if !reflect.DeepEqual(message, originalMessage) {
+			t.Errorf("received message %v different from original message %v", message, originalMessage)
+		}
 	}
 }

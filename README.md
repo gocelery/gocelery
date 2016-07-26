@@ -22,9 +22,10 @@ You can also use this library as pure go distributed task queue.
 
 ## Supported Brokers/Backends
 
+Now supporting both Redis and AMQP!!
+
 * Redis (broker/backend)
-* AMQP (broker)
-* AMQP (backend) - WIP
+* AMQP (broker/backend)
 
 ## Celery Configuration
 
@@ -52,14 +53,13 @@ func add(a int, b int) int {
 }
 
 func main() {
-    // create broker
+    // create broker and backend
 	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
+    celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
 
-    // Use AMQP broker instead
+    // use AMQP instead
     // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
-
-    // create backend
-	celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+    // celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
 
 	// Configure with 2 celery workers
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 2)
@@ -133,14 +133,13 @@ Submit Task from Go Client
 
 ```go
 func main() {
-    // create broker
+    // create broker and backend
 	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
+    celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
 
-    // Use AMQP broker instead
+    // use AMQP instead
     // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
-
-    // create backend
-	celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+    // celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
 
     // create client
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 0)
@@ -169,13 +168,6 @@ func main() {
 go run example/client/main.go
 ```
 
-## Test
-
-Monitor Redis Message
-```bash
-redis-cli monitor
-```
-
 ## Sample Celery Task Message
 
 ```javascript
@@ -200,10 +192,6 @@ redis-cli monitor
 
 You are more than welcome to make any contributions.
 Please create Pull Request for any changes.
-
-I need help on following items:
-* Supporting other brokers/backends such as RabbitMQ
-* Implementing more comprehensive tests
 
 ## LICENSE
 

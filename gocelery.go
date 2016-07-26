@@ -61,13 +61,17 @@ func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, e
 	if err != nil {
 		return nil, err
 	}
-	return &AsyncResult{celeryTask.ID, cc.backend}, nil
+	return &AsyncResult{
+		taskID:  celeryTask.ID,
+		backend: cc.backend,
+	}, nil
 }
 
 // AsyncResult is pending result
 type AsyncResult struct {
 	taskID  string
 	backend CeleryBackend
+	result  *ResultMessage
 }
 
 // Get gets actual result from redis
@@ -92,6 +96,9 @@ func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
 
 // AsyncGet gets actual result from redis and returns nil if not available
 func (ar *AsyncResult) AsyncGet() (interface{}, error) {
+	if ar.result != nil {
+		return ar.result.Result, nil
+	}
 	// process
 	val, err := ar.backend.GetResult(ar.taskID)
 	if err != nil {
@@ -103,6 +110,7 @@ func (ar *AsyncResult) AsyncGet() (interface{}, error) {
 	if val.Status != "SUCCESS" {
 		return nil, fmt.Errorf("error response status %v", val)
 	}
+	ar.result = val
 	return val.Result, nil
 }
 
@@ -112,5 +120,6 @@ func (ar *AsyncResult) Ready() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	ar.result = val
 	return (val != nil), nil
 }

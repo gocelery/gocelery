@@ -10,6 +10,14 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+func getBackends() []CeleryBackend {
+	return []CeleryBackend{
+		NewRedisCeleryBackend("localhost:6379", ""),
+		NewAMQPCeleryBackend("amqp://"),
+	}
+}
+
+// TestGetResult is Redis specific test to get result from backend
 func TestGetResult(t *testing.T) {
 	backend := NewRedisCeleryBackend("localhost:6379", "")
 	taskID := uuid.NewV4().String()
@@ -37,6 +45,7 @@ func TestGetResult(t *testing.T) {
 	}
 }
 
+// TestSetResult is Redis specific test to set result to backend
 func TestSetResult(t *testing.T) {
 	backend := NewRedisCeleryBackend("localhost:6379", "")
 	taskID := uuid.NewV4().String()
@@ -66,22 +75,24 @@ func TestSetResult(t *testing.T) {
 	}
 }
 
+// TestSetGetResult tests set/get result feature for all backends
 func TestSetGetResult(t *testing.T) {
-	backend := NewRedisCeleryBackend("localhost:6379", "")
-	taskID := uuid.NewV4().String()
-	value := rand.Float64()
-	resultMessage := NewResultMessage(reflect.ValueOf(value))
-	// set result
-	err := backend.SetResult(taskID, resultMessage)
-	if err != nil {
-		t.Errorf("error setting result to backend: %v", err)
-	}
-	// get result
-	res, err := backend.GetResult(taskID)
-	if err != nil {
-		t.Errorf("error getting result from backend: %v", err)
-	}
-	if !reflect.DeepEqual(res, resultMessage) {
-		t.Errorf("result message received %v is different from original %v", res, resultMessage)
+	for _, backend := range getBackends() {
+		taskID := uuid.NewV4().String()
+		value := rand.Float64()
+		resultMessage := NewResultMessage(reflect.ValueOf(value))
+		// set result
+		err := backend.SetResult(taskID, resultMessage)
+		if err != nil {
+			t.Errorf("error setting result to backend: %v", err)
+		}
+		// get result
+		res, err := backend.GetResult(taskID)
+		if err != nil {
+			t.Errorf("error getting result from backend: %v", err)
+		}
+		if !reflect.DeepEqual(res, resultMessage) {
+			t.Errorf("result message received %v is different from original %v", res, resultMessage)
+		}
 	}
 }

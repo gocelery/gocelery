@@ -2,7 +2,8 @@ package gocelery
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
+	"time"
 
 	"github.com/streadway/amqp"
 )
@@ -100,7 +101,52 @@ func (b *AMQPCeleryBroker) StartConsumingChannel() error {
 
 // SendCeleryMessage sends CeleryMessage to broker
 func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
-	return fmt.Errorf("AMQP CeleryMessage client is not yet supported")
+	taskMessage := message.GetTaskMessage()
+	log.Printf("sending task ID %s\n", taskMessage.ID)
+	queueName := "celery"
+	_, err := b.QueueDeclare(
+		queueName, // name
+		true,      // durable
+		false,     // autoDelete
+		false,     // exclusive
+		false,     // noWait
+		nil,       // args
+	)
+	if err != nil {
+		return err
+	}
+	err = b.ExchangeDeclare(
+		"default",
+		"direct",
+		true,
+		true,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	resBytes, err := json.Marshal(taskMessage)
+	if err != nil {
+		return err
+	}
+
+	publishMessage := amqp.Publishing{
+		DeliveryMode: amqp.Persistent,
+		Timestamp:    time.Now(),
+		ContentType:  "application/json",
+		Body:         resBytes,
+	}
+
+	return b.Publish(
+		"",
+		queueName,
+		false,
+		false,
+		publishMessage,
+	)
 }
 
 // GetTaskMessage retrieves task message from AMQP queue

@@ -12,11 +12,14 @@ import (
 // celery -A worker worker --loglevel=debug --without-heartbeat --without-mingle
 
 func main() {
-	// create broker
+	// create broker and backend
 	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
-	//celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
-	// create backend
 	celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+
+	// AMQP example
+	//celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
+	//celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
+
 	// create client
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 0)
 	// send task
@@ -30,7 +33,7 @@ func main() {
 	fmt.Printf("Ready status: %v\n", isReady)
 
 	// get result with 1s timeout
-	res, err := asyncResult.Get(1 * time.Second)
+	res, err := asyncResult.Get(10 * time.Second)
 	if err != nil {
 		fmt.Println(err)
 	} else {

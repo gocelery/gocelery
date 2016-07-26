@@ -12,11 +12,14 @@ func add(a int, b int) int {
 }
 
 func main() {
-	// create broker
-	//celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
-	celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
-	// create backend
+	// create broker and backend
+	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
 	celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+
+	// AMQP example
+	//celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
+	//celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
+
 	// Configure with 2 celery workers
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 2)
 	// worker.add name reflects "add" task method found in "worker.py"
