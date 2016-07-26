@@ -1,9 +1,14 @@
 from celery import Celery
 
+'''
 app = Celery('tasks',
     broker='redis://localhost:6379',
     backend='redis://localhost:6379'
 )
+'''
+app = Celery('tasks',
+    backend='amqp://',
+    broker='amqp://')
 
 app.conf.update(
     CELERY_TASK_SERIALIZER='json',

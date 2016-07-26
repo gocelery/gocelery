@@ -138,6 +138,7 @@ func (tm *TaskMessage) Encode() (string, error) {
 
 // ResultMessage is return message received from broker
 type ResultMessage struct {
+	ID        string        `json:"task_id"`
 	Status    string        `json:"status"`
 	Traceback interface{}   `json:"traceback"`
 	Result    interface{}   `json:"result"`

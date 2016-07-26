@@ -23,7 +23,8 @@ You can also use this library as pure go distributed task queue.
 ## Supported Brokers/Backends
 
 * Redis (broker/backend)
-
+* AMQP (broker)
+* AMQP (backend) - WIP
 
 ## Celery Configuration
 
@@ -52,16 +53,24 @@ func add(a int, b int) int {
 
 func main() {
     // create broker
-	celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
-	// create backend
-	celeryBackend := gocelery.NewCeleryRedisBackend("localhost:6379", "")
+	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
+
+    // Use AMQP broker instead
+    // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
+
+    // create backend
+	celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+
 	// Configure with 2 celery workers
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 2)
+
 	// worker.add name reflects "add" task method found in "worker.py"
 	celeryClient.Register("worker.add", add)
-	// Start Worker - blocking method
+
+    // Start Worker - blocking method
 	go celeryClient.StartWorker()
-	// Wait 30 seconds and stop all workers
+
+    // Wait 30 seconds and stop all workers
 	time.Sleep(30 * time.Second)
 	celeryClient.StopWorker()
 }
@@ -125,16 +134,23 @@ Submit Task from Go Client
 ```go
 func main() {
     // create broker
-	celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
-	// create backend
-	celeryBackend := gocelery.NewCeleryRedisBackend("localhost:6379", "")
-	// create client
+	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
+
+    // Use AMQP broker instead
+    // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
+
+    // create backend
+	celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+
+    // create client
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 0)
-	// send task
+
+    // send task
 	asyncResult, err := celeryClient.Delay("worker.add", 3, 5)
 	if err != nil {
 		panic(err)
 	}
+
     // check if result is ready
 	isReady, _ := asyncResult.Ready()
 	fmt.Printf("ready status %v\n", isReady)

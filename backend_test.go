@@ -11,7 +11,7 @@ import (
 )
 
 func TestGetResult(t *testing.T) {
-	backend := NewCeleryRedisBackend("localhost:6379", "")
+	backend := NewRedisCeleryBackend("localhost:6379", "")
 	taskID := uuid.NewV4().String()
 
 	// value must be float64 for testing due to json limitation
@@ -38,7 +38,7 @@ func TestGetResult(t *testing.T) {
 }
 
 func TestSetResult(t *testing.T) {
-	backend := NewCeleryRedisBackend("localhost:6379", "")
+	backend := NewRedisCeleryBackend("localhost:6379", "")
 	taskID := uuid.NewV4().String()
 	value := rand.Float64()
 	resultMessage := NewResultMessage(reflect.ValueOf(value))
@@ -67,7 +67,7 @@ func TestSetResult(t *testing.T) {
 }
 
 func TestSetGetResult(t *testing.T) {
-	backend := NewCeleryRedisBackend("localhost:6379", "")
+	backend := NewRedisCeleryBackend("localhost:6379", "")
 	taskID := uuid.NewV4().String()
 	value := rand.Float64()
 	resultMessage := NewResultMessage(reflect.ValueOf(value))

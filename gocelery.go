@@ -12,6 +12,19 @@ type CeleryClient struct {
 	worker  *CeleryWorker
 }
 
+// CeleryBroker is interface for celery broker database
+type CeleryBroker interface {
+	SendCeleryMessage(*CeleryMessage) error
+	//GetCeleryMessage() (*CeleryMessage, error)
+	GetTaskMessage() (*TaskMessage, error)
+}
+
+// CeleryBackend is interface for celery backend database
+type CeleryBackend interface {
+	GetResult(string) (*ResultMessage, error)
+	SetResult(taskID string, result *ResultMessage) error
+}
+
 // NewCeleryClient creates new celery client
 func NewCeleryClient(broker CeleryBroker, backend CeleryBackend, numWorkers int) (*CeleryClient, error) {
 	return &CeleryClient{

@@ -9,14 +9,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-// CeleryBroker is interface for celery broker database
-type CeleryBroker interface {
-	SendCeleryMessage(*CeleryMessage) error
-	GetCeleryMessage() (*CeleryMessage, error)
-}
-
-// CeleryRedisBroker is Redis implementation of CeleryBroker
-type CeleryRedisBroker struct {
+// RedisCeleryBroker is CeleryBroker for Redis
+type RedisCeleryBroker struct {
 	*redis.Pool
 	queueName   string
 	stopChannel chan bool
@@ -48,16 +42,16 @@ func NewRedisPool(host, pass string) *redis.Pool {
 	}
 }
 
-// NewCeleryRedisBroker creates new CeleryRedisBroker
-func NewCeleryRedisBroker(host, pass string) *CeleryRedisBroker {
-	return &CeleryRedisBroker{
+// NewRedisCeleryBroker creates new RedisCeleryBroker
+func NewRedisCeleryBroker(host, pass string) *RedisCeleryBroker {
+	return &RedisCeleryBroker{
 		Pool:      NewRedisPool(host, pass),
 		queueName: "celery",
 	}
 }
 
-// SendCeleryMessage sends CeleryMessage to broker
-func (cb *CeleryRedisBroker) SendCeleryMessage(message *CeleryMessage) error {
+// SendCeleryMessage sends CeleryMessage to redis queue
+func (cb *RedisCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	jsonBytes, err := json.Marshal(message)
 	if err != nil {
 		return err
@@ -71,8 +65,8 @@ func (cb *CeleryRedisBroker) SendCeleryMessage(message *CeleryMessage) error {
 	return nil
 }
 
-// GetCeleryMessage gets celery message from broker
-func (cb *CeleryRedisBroker) GetCeleryMessage() (*CeleryMessage, error) {
+// GetCeleryMessage retrieves celery message from redis queue
+func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 	conn := cb.Get()
 	defer conn.Close()
 	messageJSON, err := conn.Do("BLPOP", cb.queueName, "1")
@@ -91,4 +85,13 @@ func (cb *CeleryRedisBroker) GetCeleryMessage() (*CeleryMessage, error) {
 	var message CeleryMessage
 	json.Unmarshal(messageList[1].([]byte), &message)
 	return &message, nil
+}
+
+// GetTaskMessage retrieves task message from redis queue
+func (cb *RedisCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
+	celeryMessage, err := cb.GetCeleryMessage()
+	if err != nil {
+		return nil, err
+	}
+	return celeryMessage.GetTaskMessage(), nil
 }

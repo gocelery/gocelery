@@ -17,7 +17,7 @@ func makeCeleryMessage() (*CeleryMessage, error) {
 }
 
 func TestSend(t *testing.T) {
-	broker := NewCeleryRedisBroker("localhost:6379", "")
+	broker := NewRedisCeleryBroker("localhost:6379", "")
 	celeryMessage, err := makeCeleryMessage()
 	if err != nil || celeryMessage == nil {
 		t.Errorf("failed to construct celery message: %v", err)
@@ -45,7 +45,7 @@ func TestSend(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	broker := NewCeleryRedisBroker("localhost:6379", "")
+	broker := NewRedisCeleryBroker("localhost:6379", "")
 	celeryMessage, err := makeCeleryMessage()
 	if err != nil || celeryMessage == nil {
 		t.Errorf("failed to construct celery message: %v", err)
@@ -71,7 +71,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestSendGet(t *testing.T) {
-	broker := NewCeleryRedisBroker("localhost:6379", "")
+	broker := NewRedisCeleryBroker("localhost:6379", "")
 	celeryMessage, err := makeCeleryMessage()
 	if err != nil || celeryMessage == nil {
 		t.Errorf("failed to construct celery message: %v", err)
