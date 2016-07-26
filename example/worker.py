@@ -6,7 +6,9 @@ app = Celery('tasks',
     backend='redis://localhost:6379'
 )
 '''
-app = Celery('tasks', backend='amqp', broker='amqp://')
+app = Celery('tasks',
+    backend='amqp://',
+    broker='amqp://')
 
 app.conf.update(
     CELERY_TASK_SERIALIZER='json',

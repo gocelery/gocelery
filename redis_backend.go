@@ -7,27 +7,21 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-// CeleryBackend is interface for celery backend database
-type CeleryBackend interface {
-	GetResult(string) (*ResultMessage, error)
-	SetResult(taskID string, result *ResultMessage) error
-}
-
-// CeleryRedisBackend is Redis implementation of CeleryBackend
-type CeleryRedisBackend struct {
+// RedisCeleryBackend is CeleryBackend for Redis
+type RedisCeleryBackend struct {
 	*redis.Pool
 }
 
-// NewCeleryRedisBackend creates new CeleryRedisBackend
-func NewCeleryRedisBackend(host, pass string) *CeleryRedisBackend {
-	return &CeleryRedisBackend{
+// NewRedisCeleryBackend creates new RedisCeleryBackend
+func NewRedisCeleryBackend(host, pass string) *RedisCeleryBackend {
+	return &RedisCeleryBackend{
 		Pool: NewRedisPool(host, pass),
 	}
 }
 
 // GetResult calls API to get asynchronous result
 // Should be called by AsyncResult
-func (cb *CeleryRedisBackend) GetResult(taskID string) (*ResultMessage, error) {
+func (cb *RedisCeleryBackend) GetResult(taskID string) (*ResultMessage, error) {
 	//"celery-task-meta-" + taskID
 	conn := cb.Get()
 	defer conn.Close()
@@ -47,7 +41,7 @@ func (cb *CeleryRedisBackend) GetResult(taskID string) (*ResultMessage, error) {
 }
 
 // SetResult pushes result back into backend
-func (cb *CeleryRedisBackend) SetResult(taskID string, result *ResultMessage) error {
+func (cb *RedisCeleryBackend) SetResult(taskID string, result *ResultMessage) error {
 	resBytes, err := json.Marshal(result)
 	if err != nil {
 		return err

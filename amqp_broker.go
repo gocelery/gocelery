@@ -2,24 +2,46 @@ package gocelery
 
 import (
 	"encoding/json"
-	"log"
-	"time"
+	"fmt"
 
 	"github.com/streadway/amqp"
 )
 
-//https://abhishek-tiwari.com/post/amqp-rabbitmq-and-celery-a-visual-guide-for-dummies
-//http://docs.celeryproject.org/en/latest/userguide/routing.html#amqp-primer
+// AMQPExchange stores AMQP Exchange configuration
+type AMQPExchange struct {
+	Name       string
+	Type       string
+	Durable    bool
+	AutoDelete bool
+}
 
-// Exchange - send messages to queue via exchange
-// messages are re-routed at exchange to multiple queues
+// NewAMQPExchange creates new AMQPExchange
+func NewAMQPExchange(name string) *AMQPExchange {
+	return &AMQPExchange{
+		Name:       name,
+		Type:       "direct",
+		Durable:    true,
+		AutoDelete: true,
+	}
+}
 
-// Queue - message queue
+// AMQPQueue stores AMQP Queue configuration
+type AMQPQueue struct {
+	Name       string
+	Durable    bool
+	AutoDelete bool
+}
 
-// Bindings - rules that exchange uses to route messages to queues
-// optional routing key attribute -
+// NewAMQPQueue creates new AMQPQueue
+func NewAMQPQueue(name string) *AMQPQueue {
+	return &AMQPQueue{
+		Name:       name,
+		Durable:    true,
+		AutoDelete: false,
+	}
+}
 
-//AMQPCeleryBroker hello
+//AMQPCeleryBroker is RedisBroker for AMQP
 type AMQPCeleryBroker struct {
 	*amqp.Channel
 	exchange         *AMQPExchange
@@ -28,7 +50,7 @@ type AMQPCeleryBroker struct {
 	rate             int
 }
 
-// NewAMQPConnection hello
+// NewAMQPConnection creates new AMQP channel
 func NewAMQPConnection(host string) *amqp.Channel {
 	connection, err := amqp.Dial(host)
 	if err != nil {
@@ -42,7 +64,7 @@ func NewAMQPConnection(host string) *amqp.Channel {
 	return channel
 }
 
-// NewAMQPCeleryBroker ch
+// NewAMQPCeleryBroker creates new AMQPCeleryBroker
 func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
 	// ensure exchange is initialized
 	broker := &AMQPCeleryBroker{
@@ -66,36 +88,7 @@ func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
 	return broker
 }
 
-type AMQPExchange struct {
-	Name       string
-	Type       string
-	Durable    bool
-	AutoDelete bool
-}
-
-type AMQPQueue struct {
-	Name       string
-	Durable    bool
-	AutoDelete bool
-}
-
-func NewAMQPExchange(name string) *AMQPExchange {
-	return &AMQPExchange{
-		Name:       name,
-		Type:       "direct",
-		Durable:    true,
-		AutoDelete: true,
-	}
-}
-
-func NewAMQPQueue(name string) *AMQPQueue {
-	return &AMQPQueue{
-		Name:       name,
-		Durable:    true,
-		AutoDelete: false,
-	}
-}
-
+// StartConsumingChannel spawns receiving channel on AMQP queue
 func (b *AMQPCeleryBroker) StartConsumingChannel() error {
 	channel, err := b.Consume(b.queue.Name, "", false, false, false, false, nil)
 	if err != nil {
@@ -107,44 +100,21 @@ func (b *AMQPCeleryBroker) StartConsumingChannel() error {
 
 // SendCeleryMessage sends CeleryMessage to broker
 func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
-	return nil
+	return fmt.Errorf("AMQP CeleryMessage client is not yet supported")
 }
 
-// GetCeleryMessage hello
-func (b *AMQPCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
-	// connection, exchange, queue already available
-	// TODO: timeout feature?
+// GetTaskMessage retrieves task message from AMQP queue
+func (b *AMQPCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
 	delivery := <-b.consumingChannel
-
-	// received is task message!!!!
-
-	/*
-			   {
-			       "expires": null,
-		           "utc": true,
-		           "args": [5456, 2878],
-		           "chord": null,
-		           "callbacks": null,
-		           "errbacks": null,
-		           "taskset": null,
-		           "id": "f9bbb86c-4ac2-4816-8ccd-53f904185597",
-		           "retries": 0,
-		           "task": "worker.add",
-		           "timelimit": [null, null],
-		           "eta": null, "kwargs": {}
-		       }
-	*/
-
+	delivery.Ack(false)
 	var taskMessage TaskMessage
-	json.Unmarshal(delivery.Body, &taskMessage)
-	log.Println(taskMessage)
-	encoded, err := taskMessage.Encode()
-	if err != nil {
+	if err := json.Unmarshal(delivery.Body, &taskMessage); err != nil {
 		return nil, err
 	}
-	return NewCeleryMessage(encoded), nil
+	return &taskMessage, nil
 }
 
+// CreateExchange declares AMQP exchange with stored configuration
 func (b *AMQPCeleryBroker) CreateExchange() error {
 	return b.ExchangeDeclare(
 		b.exchange.Name,
@@ -157,6 +127,7 @@ func (b *AMQPCeleryBroker) CreateExchange() error {
 	)
 }
 
+// CreateQueue declares AMQP Queue with stored configuration
 func (b *AMQPCeleryBroker) CreateQueue() error {
 	_, err := b.QueueDeclare(
 		b.queue.Name,
@@ -167,98 +138,4 @@ func (b *AMQPCeleryBroker) CreateQueue() error {
 		nil,
 	)
 	return err
-}
-
-func ConsumeExample() error {
-	conn, err := amqp.Dial("amqp://")
-	if err != nil {
-		return err
-	}
-	channel, err := conn.Channel()
-	if err != nil {
-		return err
-	}
-
-	// declare exchange
-	exchangeName := "default"
-	err = channel.ExchangeDeclare(exchangeName, "direct", true, false, false, false, nil)
-	if err != nil {
-		return err
-	}
-
-	// declare queue
-	queueName := "celery"
-	_, err = channel.QueueDeclare(queueName, true, false, false, false, nil)
-	if err != nil {
-		return err
-	}
-
-	// set quality of service
-	rate := 4 // num cpu?
-	err = channel.Qos(rate, 0, false)
-	if err != nil {
-		return err
-	}
-
-	// consume
-	// result is amqp.Delivery channel
-	deliveries, err := channel.Consume(queueName, "", false, false, false, false, nil)
-	if err != nil {
-		return err
-	}
-
-	// start receiving messages
-	for d := range deliveries {
-		msg := d.Body
-		// do something with message
-		_ = msg
-	}
-
-	// For result, use amqp.Publishing
-
-	return nil
-
-}
-
-func ResultExample() error {
-	conn, err := amqp.Dial("amqp://")
-	if err != nil {
-		return err
-	}
-	channel, err := conn.Channel()
-	if err != nil {
-		return err
-	}
-
-	// prepare result message
-	message := &ResultMessage{
-		Status:    "SUCCESS",
-		Result:    1,
-		Traceback: nil,
-		Children:  nil,
-	}
-	jsonBytes, err := json.Marshal(message)
-	if err != nil {
-		return err
-	}
-
-	// TODO: declare queue
-	queueName := "celery"
-	exchangeName := "default"
-
-	// publish
-	amqpMessage := amqp.Publishing{
-		DeliveryMode:    amqp.Persistent,
-		Timestamp:       time.Now(),
-		ContentType:     "application/json",
-		ContentEncoding: "utf-8",
-		Body:            jsonBytes,
-	}
-	channel.Publish(exchangeName, queueName, false, false, amqpMessage)
-
-	return nil
-}
-
-func (b *AMQPCeleryBroker) SendResultMessage() error {
-	return nil
 }
