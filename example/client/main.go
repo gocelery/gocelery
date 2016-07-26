@@ -12,12 +12,14 @@ import (
 // celery -A worker worker --loglevel=debug --without-heartbeat --without-mingle
 
 func main() {
-	// create broker
-	//celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
-	celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
-	// create backend
-	//celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
-	celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
+	// create broker and backend
+	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
+	celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+
+	// AMQP example
+	//celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
+	//celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
+
 	// create client
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 0)
 	// send task

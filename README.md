@@ -53,14 +53,13 @@ func add(a int, b int) int {
 }
 
 func main() {
-    // create broker
+    // create broker and backend
 	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
+    celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
 
-    // Use AMQP broker instead
+    // use AMQP instead
     // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
-
-    // create backend
-	celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+    // celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
 
 	// Configure with 2 celery workers
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 2)
@@ -134,14 +133,13 @@ Submit Task from Go Client
 
 ```go
 func main() {
-    // create broker
+    // create broker and backend
 	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
+    celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
 
-    // Use AMQP broker instead
+    // use AMQP instead
     // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
-
-    // create backend
-	celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+    // celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
 
     // create client
 	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 0)
@@ -168,13 +166,6 @@ func main() {
 
 ```bash
 go run example/client/main.go
-```
-
-## Test
-
-Monitor Redis Message
-```bash
-redis-cli monitor
 ```
 
 ## Sample Celery Task Message
