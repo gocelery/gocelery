@@ -12,8 +12,8 @@ func multiply(a int, b int) int {
 }
 
 func initClient() (*CeleryClient, error) {
-	celeryBroker := NewCeleryRedisBroker("localhost:6379", "")
-	celeryBackend := NewCeleryRedisBackend("localhost:6379", "")
+	celeryBroker := NewRedisCeleryBroker("localhost:6379", "")
+	celeryBackend := NewRedisCeleryBackend("localhost:6379", "")
 	celeryClient, err := NewCeleryClient(celeryBroker, celeryBackend, 1)
 	return celeryClient, err
 }
