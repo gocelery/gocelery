@@ -57,6 +57,16 @@ func TestWorkerClient(t *testing.T) {
 		t.Errorf("result should be available by now")
 	}
 
+	// repeat get for cache effect
+	cachedVal, err := ar.Get(1 * time.Second)
+	if err != nil {
+		t.Errorf("failed to get result: %v", err)
+	}
+
+	if !reflect.DeepEqual(val, cachedVal) {
+		t.Errorf("failed to retrieve cached val %v that should be same as %v", cachedVal, val)
+	}
+
 	// number is always returned as float64
 	// due to json parser limitation in golang
 	actual := int(val.(float64))

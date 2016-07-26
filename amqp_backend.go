@@ -9,6 +9,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// AMQPCeleryBackend CeleryBackend for AMQP
 type AMQPCeleryBackend struct {
 	*amqp.Channel
 	exchange *AMQPExchange
@@ -130,43 +131,4 @@ func (b *AMQPCeleryBackend) SetResult(taskID string, result *ResultMessage) erro
 		false,
 		message,
 	)
-}
-
-func ResultExample() error {
-	conn, err := amqp.Dial("amqp://")
-	if err != nil {
-		return err
-	}
-	channel, err := conn.Channel()
-	if err != nil {
-		return err
-	}
-
-	// prepare result message
-	message := &ResultMessage{
-		Status:    "SUCCESS",
-		Result:    1,
-		Traceback: nil,
-		Children:  nil,
-	}
-	jsonBytes, err := json.Marshal(message)
-	if err != nil {
-		return err
-	}
-
-	// TODO: declare queue
-	queueName := "celery"
-	exchangeName := "default"
-
-	// publish
-	amqpMessage := amqp.Publishing{
-		DeliveryMode:    amqp.Persistent,
-		Timestamp:       time.Now(),
-		ContentType:     "application/json",
-		ContentEncoding: "utf-8",
-		Body:            jsonBytes,
-	}
-	channel.Publish(exchangeName, queueName, false, false, amqpMessage)
-
-	return nil
 }
