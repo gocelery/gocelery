@@ -10,3 +10,4 @@ script:
     - $HOME/gopath/bin/goveralls -service=travis-ci
 services:
     - redis
+    - rabbitmq
