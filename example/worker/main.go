@@ -13,7 +13,8 @@ func add(a int, b int) int {
 
 func main() {
 	// create broker
-	celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
+	//celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
+	celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
 	// create backend
 	celeryBackend := gocelery.NewCeleryRedisBackend("localhost:6379", "")
 	// Configure with 2 celery workers

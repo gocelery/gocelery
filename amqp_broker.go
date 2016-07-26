@@ -2,6 +2,7 @@ package gocelery
 
 import (
 	"encoding/json"
+	"log"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -21,8 +22,10 @@ import (
 //AMQPCeleryBroker hello
 type AMQPCeleryBroker struct {
 	*amqp.Channel
-	exchange  *AMQPExchange
-	queueName string
+	exchange         *AMQPExchange
+	queue            *AMQPQueue
+	consumingChannel <-chan amqp.Delivery
+	rate             int
 }
 
 // NewAMQPConnection hello
@@ -42,15 +45,25 @@ func NewAMQPConnection(host string) *amqp.Channel {
 // NewAMQPCeleryBroker ch
 func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
 	// ensure exchange is initialized
-	b := &AMQPCeleryBroker{
-		Channel:   NewAMQPConnection(host),
-		queueName: "celery",
+	broker := &AMQPCeleryBroker{
+		Channel:  NewAMQPConnection(host),
+		exchange: NewAMQPExchange("default"),
+		queue:    NewAMQPQueue("celery"),
+		rate:     4,
 	}
-	err := b.SetExchange("default")
-	if err != nil {
+	if err := broker.CreateExchange(); err != nil {
 		panic(err)
 	}
-	return b
+	if err := broker.CreateQueue(); err != nil {
+		panic(err)
+	}
+	if err := broker.Qos(broker.rate, 0, false); err != nil {
+		panic(err)
+	}
+	if err := broker.StartConsumingChannel(); err != nil {
+		panic(err)
+	}
+	return broker
 }
 
 type AMQPExchange struct {
@@ -60,39 +73,36 @@ type AMQPExchange struct {
 	AutoDelete bool
 }
 
-func (b *AMQPCeleryBroker) SetExchange(name string) error {
-	e := &AMQPExchange{
+type AMQPQueue struct {
+	Name       string
+	Durable    bool
+	AutoDelete bool
+}
+
+func NewAMQPExchange(name string) *AMQPExchange {
+	return &AMQPExchange{
 		Name:       name,
 		Type:       "direct",
 		Durable:    true,
 		AutoDelete: true,
 	}
-	err := b.ExchangeDeclare(
-		e.Name,
-		e.Type,
-		e.Durable,
-		e.AutoDelete,
-		false,
-		false,
-		nil,
-	)
+}
+
+func NewAMQPQueue(name string) *AMQPQueue {
+	return &AMQPQueue{
+		Name:       name,
+		Durable:    true,
+		AutoDelete: false,
+	}
+}
+
+func (b *AMQPCeleryBroker) StartConsumingChannel() error {
+	channel, err := b.Consume(b.queue.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return err
 	}
-	b.exchange = e
+	b.consumingChannel = channel
 	return nil
-}
-
-func (b *AMQPCeleryBroker) SetQueue(name string) error {
-	_, err := b.Channel.QueueDeclare(
-		name,  // name
-		true,  // durable
-		false, // autodelete
-		false, // exclusive
-		false, // noWait
-		nil,   // args
-	)
-	return err
 }
 
 // SendCeleryMessage sends CeleryMessage to broker
@@ -102,7 +112,61 @@ func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 
 // GetCeleryMessage hello
 func (b *AMQPCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
-	return nil, nil
+	// connection, exchange, queue already available
+	// TODO: timeout feature?
+	delivery := <-b.consumingChannel
+
+	// received is task message!!!!
+
+	/*
+			   {
+			       "expires": null,
+		           "utc": true,
+		           "args": [5456, 2878],
+		           "chord": null,
+		           "callbacks": null,
+		           "errbacks": null,
+		           "taskset": null,
+		           "id": "f9bbb86c-4ac2-4816-8ccd-53f904185597",
+		           "retries": 0,
+		           "task": "worker.add",
+		           "timelimit": [null, null],
+		           "eta": null, "kwargs": {}
+		       }
+	*/
+
+	var taskMessage TaskMessage
+	json.Unmarshal(delivery.Body, &taskMessage)
+	log.Println(taskMessage)
+	encoded, err := taskMessage.Encode()
+	if err != nil {
+		return nil, err
+	}
+	return NewCeleryMessage(encoded), nil
+}
+
+func (b *AMQPCeleryBroker) CreateExchange() error {
+	return b.ExchangeDeclare(
+		b.exchange.Name,
+		b.exchange.Type,
+		b.exchange.Durable,
+		b.exchange.AutoDelete,
+		false,
+		false,
+		nil,
+	)
+}
+
+func (b *AMQPCeleryBroker) CreateQueue() error {
+	_, err := b.QueueDeclare(
+		b.queue.Name,
+		b.queue.Durable,
+		b.queue.AutoDelete,
+		false,
+		false,
+		nil,
+	)
+	return err
 }
 
 func ConsumeExample() error {

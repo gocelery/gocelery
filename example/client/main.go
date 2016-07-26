@@ -14,6 +14,7 @@ import (
 func main() {
 	// create broker
 	celeryBroker := gocelery.NewCeleryRedisBroker("localhost:6379", "")
+	//celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
 	// create backend
 	celeryBackend := gocelery.NewCeleryRedisBackend("localhost:6379", "")
 	// create client
