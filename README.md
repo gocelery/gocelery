@@ -79,6 +79,26 @@ func main() {
 go run example/worker/main.go
 ```
 
+You can use custom struct instead to hold shared structures.
+
+```go
+
+type MyStruct struct {
+	MyInt int
+}
+
+func (so *MyStruct) add(a int, b int) int {
+	return a + b + so.MyInt
+}
+
+// code omitted ...
+
+ms := &MyStruct{10}
+celeryClient.Register("worker.add", ms.add)
+
+// code omitted ...
+```
+
 
 Submit Task from Python Client
 ```python
