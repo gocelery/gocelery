@@ -23,8 +23,8 @@ func TestGetResult(t *testing.T) {
 	taskID := uuid.NewV4().String()
 
 	// value must be float64 for testing due to json limitation
-	value := rand.Float64()
-	resultMessage := NewResultMessage(reflect.ValueOf(value))
+	value := reflect.ValueOf(rand.Float64())
+	resultMessage := NewResultMessage(&value)
 	messageBytes, err := json.Marshal(resultMessage)
 	if err != nil {
 		t.Errorf("error marshalling result message: %v", err)
@@ -49,8 +49,8 @@ func TestGetResult(t *testing.T) {
 func TestSetResult(t *testing.T) {
 	backend := NewRedisCeleryBackend("localhost:6379", "")
 	taskID := uuid.NewV4().String()
-	value := rand.Float64()
-	resultMessage := NewResultMessage(reflect.ValueOf(value))
+	value := reflect.ValueOf(rand.Float64())
+	resultMessage := NewResultMessage(&value)
 	// set result
 	err := backend.SetResult(taskID, resultMessage)
 	if err != nil {
@@ -79,8 +79,8 @@ func TestSetResult(t *testing.T) {
 func TestSetGetResult(t *testing.T) {
 	for _, backend := range getBackends() {
 		taskID := uuid.NewV4().String()
-		value := rand.Float64()
-		resultMessage := NewResultMessage(reflect.ValueOf(value))
+		value := reflect.ValueOf(rand.Float64())
+		resultMessage := NewResultMessage(&value)
 		// set result
 		err := backend.SetResult(taskID, resultMessage)
 		if err != nil {

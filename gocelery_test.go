@@ -11,6 +11,10 @@ func multiply(a int, b int) int {
 	return a * b
 }
 
+func noreturn(a int, b int) {
+
+}
+
 func initClient() (*CeleryClient, error) {
 	celeryBroker := NewRedisCeleryBroker("localhost:6379", "")
 	celeryBackend := NewRedisCeleryBackend("localhost:6379", "")
@@ -19,6 +23,7 @@ func initClient() (*CeleryClient, error) {
 }
 
 func TestWorkerClient(t *testing.T) {
+
 	celeryClient, err := initClient()
 	if err != nil {
 		t.Errorf("failed to create CeleryClient: %v", err)
@@ -35,11 +40,13 @@ func TestWorkerClient(t *testing.T) {
 	ar, err := celeryClient.Delay(taskName, args...)
 	if err != nil {
 		t.Errorf("failed to submit task: %v", err)
+		return
 	}
 
 	ready, err := ar.Ready()
 	if err == nil {
 		t.Errorf("backend is empty and should throw error since result is unavailable")
+		return
 	}
 
 	go celeryClient.StartWorker()
@@ -47,24 +54,29 @@ func TestWorkerClient(t *testing.T) {
 	val, err := ar.Get(5 * time.Second)
 	if err != nil {
 		t.Errorf("failed to get result: %v", err)
+		return
 	}
 
 	ready, err = ar.Ready()
 	if err != nil {
 		t.Errorf("failed to get status: %v", err)
+		return
 	}
 	if !ready {
 		t.Errorf("result should be available by now")
+		return
 	}
 
 	// repeat get for cache effect
 	cachedVal, err := ar.Get(1 * time.Second)
 	if err != nil {
 		t.Errorf("failed to get result: %v", err)
+		return
 	}
 
 	if !reflect.DeepEqual(val, cachedVal) {
 		t.Errorf("failed to retrieve cached val %v that should be same as %v", cachedVal, val)
+		return
 	}
 
 	// number is always returned as float64
@@ -73,6 +85,7 @@ func TestWorkerClient(t *testing.T) {
 
 	if actual != expected {
 		t.Errorf("returned result %v is different from expected value %v", actual, expected)
+		return
 	}
 	celeryClient.StopWorker()
 }
@@ -81,12 +94,14 @@ func TestRegister(t *testing.T) {
 	celeryClient, err := initClient()
 	if err != nil {
 		t.Errorf("failed to create CeleryClient: %v", err)
+		return
 	}
 	taskName := "multiply"
 	celeryClient.Register(taskName, multiply)
 	task := celeryClient.worker.GetTask(taskName)
 	if !reflect.DeepEqual(reflect.ValueOf(multiply), reflect.ValueOf(task)) {
 		t.Errorf("registered task %v is different from received task %v", reflect.ValueOf(multiply), reflect.ValueOf(task))
+		return
 	}
 }
 
@@ -94,12 +109,14 @@ func TestBlockingGet(t *testing.T) {
 	celeryClient, err := initClient()
 	if err != nil {
 		t.Errorf("failed to create CeleryClient: %v", err)
+		return
 	}
 
 	// send task
 	asyncResult, err := celeryClient.Delay("dummy", 3, 5)
 	if err != nil {
 		t.Errorf("failed to get async result")
+		return
 	}
 
 	duration := 1 * time.Second
@@ -112,5 +129,6 @@ func TestBlockingGet(t *testing.T) {
 	time.Sleep(duration + time.Millisecond)
 	if asyncError == nil {
 		t.Errorf("failed to timeout in time")
+		return
 	}
 }

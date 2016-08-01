@@ -146,7 +146,7 @@ type ResultMessage struct {
 }
 
 // NewResultMessage returns valid celery result message from result
-func NewResultMessage(val reflect.Value) *ResultMessage {
+func NewResultMessage(val *reflect.Value) *ResultMessage {
 	return &ResultMessage{
 		Status:    "SUCCESS",
 		Traceback: nil,

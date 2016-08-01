@@ -86,7 +86,7 @@ func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
 		default:
 			// process
 			val, err := ar.AsyncGet()
-			if err != nil || val == nil {
+			if err != nil {
 				continue
 			}
 			return val, nil
@@ -116,6 +116,9 @@ func (ar *AsyncResult) AsyncGet() (interface{}, error) {
 
 // Ready checks if actual result is ready
 func (ar *AsyncResult) Ready() (bool, error) {
+	if ar.result != nil {
+		return true, nil
+	}
 	val, err := ar.backend.GetResult(ar.taskID)
 	if err != nil {
 		return false, err

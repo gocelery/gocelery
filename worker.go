@@ -58,12 +58,13 @@ func (w *CeleryWorker) StartWorker() {
 						continue
 					}
 
-					// push result to broker
-					err = w.backend.SetResult(taskMessage.ID, NewResultMessage(*val))
+					// push result to backend
+					err = w.backend.SetResult(taskMessage.ID, NewResultMessage(val))
 					if err != nil {
 						log.Println(err)
 						continue
 					}
+
 				}
 			}
 		}()
@@ -127,5 +128,8 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) (*reflect.Value, error) {
 
 	// call method
 	res := taskFunc.Call(in)
+	if len(res) == 0 {
+		return nil, nil
+	}
 	return &res[0], nil
 }
