@@ -28,27 +28,27 @@ func (cm *CeleryMessage) reset() {
 	cm.Properties.DeliveryTag = uuid.NewV4().String()
 }
 
-var celeryMessagePool = sync.Pool{New: allocCeleryMessage}
-
-func allocCeleryMessage() interface{} {
-	return &CeleryMessage{
-		Body:        "",
-		Headers:     nil,
-		ContentType: "application/json",
-		Properties: CeleryProperties{
-			BodyEncoding:  "base64",
-			CorrelationID: uuid.NewV4().String(),
-			ReplyTo:       uuid.NewV4().String(),
-			DeliveryInfo: CeleryDeliveryInfo{
-				Priority:   0,
-				RoutingKey: "celery",
-				Exchange:   "celery",
+var celeryMessagePool = sync.Pool{
+	New: func() interface{} {
+		return &CeleryMessage{
+			Body:        "",
+			Headers:     nil,
+			ContentType: "application/json",
+			Properties: CeleryProperties{
+				BodyEncoding:  "base64",
+				CorrelationID: uuid.NewV4().String(),
+				ReplyTo:       uuid.NewV4().String(),
+				DeliveryInfo: CeleryDeliveryInfo{
+					Priority:   0,
+					RoutingKey: "celery",
+					Exchange:   "celery",
+				},
+				DeliveryMode: 2,
+				DeliveryTag:  uuid.NewV4().String(),
 			},
-			DeliveryMode: 2,
-			DeliveryTag:  uuid.NewV4().String(),
-		},
-		ContentEncoding: "utf-8",
-	}
+			ContentEncoding: "utf-8",
+		}
+	},
 }
 
 func getCeleryMessage(encodedTaskMessage string) *CeleryMessage {
@@ -122,15 +122,15 @@ func (tm *TaskMessage) reset() {
 	tm.Kwargs = nil
 }
 
-var taskMessagePool = sync.Pool{New: allocTaskMessage}
-
-func allocTaskMessage() interface{} {
-	return &TaskMessage{
-		ID:      uuid.NewV4().String(),
-		Retries: 0,
-		Kwargs:  nil,
-		ETA:     time.Now().Format(time.RFC3339),
-	}
+var taskMessagePool = sync.Pool{
+	New: func() interface{} {
+		return &TaskMessage{
+			ID:      uuid.NewV4().String(),
+			Retries: 0,
+			Kwargs:  nil,
+			ETA:     time.Now().Format(time.RFC3339),
+		}
+	},
 }
 
 func getTaskMessage(task string, args ...interface{}) *TaskMessage {
@@ -183,14 +183,14 @@ func (rm *ResultMessage) reset() {
 	rm.Result = nil
 }
 
-var resultMessagePool = sync.Pool{New: allocResultMessage}
-
-func allocResultMessage() interface{} {
-	return &ResultMessage{
-		Status:    "SUCCESS",
-		Traceback: nil,
-		Children:  nil,
-	}
+var resultMessagePool = sync.Pool{
+	New: func() interface{} {
+		return &ResultMessage{
+			Status:    "SUCCESS",
+			Traceback: nil,
+			Children:  nil,
+		}
+	},
 }
 
 func getResultMessage(val *reflect.Value) *ResultMessage {
