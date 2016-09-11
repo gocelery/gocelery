@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/satori/go.uuid"
@@ -17,6 +18,48 @@ type CeleryMessage struct {
 	ContentType     string                 `json:"content-type"`
 	Properties      CeleryProperties       `json:"properties"`
 	ContentEncoding string                 `json:"content-encoding"`
+}
+
+func (cm *CeleryMessage) reset() {
+	cm.Headers = nil
+	cm.Body = ""
+	cm.Properties.CorrelationID = uuid.NewV4().String()
+	cm.Properties.ReplyTo = uuid.NewV4().String()
+	cm.Properties.DeliveryTag = uuid.NewV4().String()
+}
+
+var celeryMessagePool = sync.Pool{New: allocCeleryMessage}
+
+func allocCeleryMessage() interface{} {
+	return &CeleryMessage{
+		Body:        "",
+		Headers:     nil,
+		ContentType: "application/json",
+		Properties: CeleryProperties{
+			BodyEncoding:  "base64",
+			CorrelationID: uuid.NewV4().String(),
+			ReplyTo:       uuid.NewV4().String(),
+			DeliveryInfo: CeleryDeliveryInfo{
+				Priority:   0,
+				RoutingKey: "celery",
+				Exchange:   "celery",
+			},
+			DeliveryMode: 2,
+			DeliveryTag:  uuid.NewV4().String(),
+		},
+		ContentEncoding: "utf-8",
+	}
+}
+
+func getCeleryMessage(encodedTaskMessage string) *CeleryMessage {
+	msg := celeryMessagePool.Get().(*CeleryMessage)
+	msg.Body = encodedTaskMessage
+	return msg
+}
+
+func releaseCeleryMessage(v *CeleryMessage) {
+	v.reset()
+	celeryMessagePool.Put(v)
 }
 
 // CeleryProperties represents properties json
@@ -36,49 +79,25 @@ type CeleryDeliveryInfo struct {
 	Exchange   string `json:"exchange"`
 }
 
-// NewCeleryMessage creates new celery message from encoded task message
-func NewCeleryMessage(encodedTaskMessage string) *CeleryMessage {
-	var headers map[string]interface{}
-	var properties = CeleryProperties{
-		BodyEncoding:  "base64",
-		CorrelationID: uuid.NewV4().String(),
-		ReplyTo:       uuid.NewV4().String(),
-		DeliveryInfo: CeleryDeliveryInfo{
-			Priority:   0,
-			RoutingKey: "celery",
-			Exchange:   "celery",
-		},
-		DeliveryMode: 2,
-		DeliveryTag:  uuid.NewV4().String(),
-	}
-	return &CeleryMessage{
-		Body:            encodedTaskMessage,
-		Headers:         headers,
-		ContentType:     "application/json",
-		Properties:      properties,
-		ContentEncoding: "utf-8",
-	}
-}
-
 // GetTaskMessage retrieve and decode task messages from broker
-func (message *CeleryMessage) GetTaskMessage() *TaskMessage {
+func (cm *CeleryMessage) GetTaskMessage() *TaskMessage {
 	// ensure content-type is 'application/json'
-	if message.ContentType != "application/json" {
-		log.Println("unsupported content type " + message.ContentType)
+	if cm.ContentType != "application/json" {
+		log.Println("unsupported content type " + cm.ContentType)
 		return nil
 	}
 	// ensure body encoding is base64
-	if message.Properties.BodyEncoding != "base64" {
-		log.Println("unsupported body encoding " + message.Properties.BodyEncoding)
+	if cm.Properties.BodyEncoding != "base64" {
+		log.Println("unsupported body encoding " + cm.Properties.BodyEncoding)
 		return nil
 	}
 	// ensure content encoding is utf-8
-	if message.ContentEncoding != "utf-8" {
-		log.Println("unsupported encoding " + message.ContentEncoding)
+	if cm.ContentEncoding != "utf-8" {
+		log.Println("unsupported encoding " + cm.ContentEncoding)
 		return nil
 	}
 	// decode body
-	taskMessage, err := DecodeTaskMessage(message.Body)
+	taskMessage, err := DecodeTaskMessage(cm.Body)
 	if err != nil {
 		log.Println("failed to decode task message")
 		return nil
@@ -96,16 +115,35 @@ type TaskMessage struct {
 	ETA     string                 `json:"eta"`
 }
 
-// NewTaskMessage creates new celery task message
-func NewTaskMessage(task string, args ...interface{}) *TaskMessage {
+func (tm *TaskMessage) reset() {
+	tm.ID = uuid.NewV4().String()
+	tm.Task = ""
+	tm.Args = nil
+	tm.Kwargs = nil
+}
+
+var taskMessagePool = sync.Pool{New: allocTaskMessage}
+
+func allocTaskMessage() interface{} {
 	return &TaskMessage{
 		ID:      uuid.NewV4().String(),
-		Task:    task,
 		Retries: 0,
-		Kwargs:  make(map[string]interface{}),
-		Args:    args,
+		Kwargs:  nil,
 		ETA:     time.Now().Format(time.RFC3339),
 	}
+}
+
+func getTaskMessage(task string, args ...interface{}) *TaskMessage {
+	msg := taskMessagePool.Get().(*TaskMessage)
+	msg.Task = task
+	msg.Args = args
+	msg.ETA = time.Now().Format(time.RFC3339)
+	return msg
+}
+
+func releaseTaskMessage(v *TaskMessage) {
+	v.reset()
+	taskMessagePool.Put(v)
 }
 
 // DecodeTaskMessage decodes base64 encrypted body and return TaskMessage object
@@ -114,16 +152,12 @@ func DecodeTaskMessage(encodedBody string) (*TaskMessage, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	//log.Println(string(body))
-
-	var message TaskMessage
-	err = json.Unmarshal(body, &message)
+	message := taskMessagePool.Get().(*TaskMessage)
+	err = json.Unmarshal(body, message)
 	if err != nil {
 		return nil, err
 	}
-	return &message, nil
-
+	return message, nil
 }
 
 // Encode returns base64 json encoded string
@@ -145,12 +179,27 @@ type ResultMessage struct {
 	Children  []interface{} `json:"children"`
 }
 
-// NewResultMessage returns valid celery result message from result
-func NewResultMessage(val *reflect.Value) *ResultMessage {
+func (rm *ResultMessage) reset() {
+	rm.Result = nil
+}
+
+var resultMessagePool = sync.Pool{New: allocResultMessage}
+
+func allocResultMessage() interface{} {
 	return &ResultMessage{
 		Status:    "SUCCESS",
 		Traceback: nil,
-		Result:    GetRealValue(val),
 		Children:  nil,
 	}
+}
+
+func getResultMessage(val *reflect.Value) *ResultMessage {
+	msg := resultMessagePool.Get().(*ResultMessage)
+	msg.Result = GetRealValue(val)
+	return msg
+}
+
+func releaseResultMessage(v *ResultMessage) {
+	v.reset()
+	resultMessagePool.Put(v)
 }

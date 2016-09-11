@@ -59,12 +59,13 @@ func (w *CeleryWorker) StartWorker() {
 					}
 
 					// push result to backend
-					err = w.backend.SetResult(taskMessage.ID, NewResultMessage(val))
+					resultMessage := getResultMessage(val)
+					defer releaseResultMessage(resultMessage)
+					err = w.backend.SetResult(taskMessage.ID, resultMessage)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
-
 				}
 			}
 		}()

@@ -15,7 +15,6 @@ type CeleryClient struct {
 // CeleryBroker is interface for celery broker database
 type CeleryBroker interface {
 	SendCeleryMessage(*CeleryMessage) error
-	//GetCeleryMessage() (*CeleryMessage, error)
 	GetTaskMessage() (*TaskMessage, error)
 }
 
@@ -51,12 +50,14 @@ func (cc *CeleryClient) StopWorker() {
 
 // Delay gets asynchronous result
 func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, error) {
-	celeryTask := NewTaskMessage(task, args...)
+	celeryTask := getTaskMessage(task, args...)
+	defer releaseTaskMessage(celeryTask)
 	encodedMessage, err := celeryTask.Encode()
 	if err != nil {
 		return nil, err
 	}
-	celeryMessage := NewCeleryMessage(encodedMessage)
+	celeryMessage := getCeleryMessage(encodedMessage)
+	defer releaseCeleryMessage(celeryMessage)
 	err = cc.broker.SendCeleryMessage(celeryMessage)
 	if err != nil {
 		return nil, err
