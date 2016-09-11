@@ -52,16 +52,15 @@ func (w *CeleryWorker) StartWorker() {
 					log.Printf("WORKER %s task message received: %v\n", workerID, taskMessage)
 
 					// run task
-					val, err := w.RunTask(taskMessage)
+					resultMsg, err := w.RunTask(taskMessage)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
+					defer releaseResultMessage(resultMsg)
 
 					// push result to backend
-					resultMessage := getResultMessage(val)
-					defer releaseResultMessage(resultMessage)
-					err = w.backend.SetResult(taskMessage.ID, resultMessage)
+					err = w.backend.SetResult(taskMessage.ID, resultMsg)
 					if err != nil {
 						log.Println(err)
 						continue
@@ -100,12 +99,26 @@ func (w *CeleryWorker) GetTask(name string) interface{} {
 }
 
 // RunTask runs celery task
-func (w *CeleryWorker) RunTask(message *TaskMessage) (*reflect.Value, error) {
+func (w *CeleryWorker) RunTask(message *TaskMessage) (*ResultMessage, error) {
+
+	// get task
 	task := w.GetTask(message.Task)
 	if task == nil {
 		return nil, fmt.Errorf("task %s is not registered", message.Task)
 	}
+
+	// convert to task interface
+	taskInterface, ok := task.(CeleryTask)
+	if ok {
+		return taskInterface.RunTask()
+	}
+
+	// use reflection to execute function ptr
 	taskFunc := reflect.ValueOf(task)
+	return runTaskFunc(&taskFunc, message)
+}
+
+func runTaskFunc(taskFunc *reflect.Value, message *TaskMessage) (*ResultMessage, error) {
 
 	// check number of arguments
 	numArgs := taskFunc.Type().NumIn()
@@ -132,5 +145,6 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) (*reflect.Value, error) {
 	if len(res) == 0 {
 		return nil, nil
 	}
-	return &res[0], nil
+	//defer releaseResultMessage(resultMessage)
+	return getReflectionResultMessage(&res[0]), nil
 }

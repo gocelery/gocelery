@@ -60,12 +60,13 @@ func TestRunTask(t *testing.T) {
 		Retries: 1,
 		ETA:     "",
 	}
-	reflectVal, err := celeryWorker.RunTask(taskMessage)
+	resultMsg, err := celeryWorker.RunTask(taskMessage)
 	if err != nil {
 		t.Errorf("failed to run celery task %v: %v", taskMessage, err)
 	}
 
-	reflectRes := reflectVal.Int()
+	reflectRes := resultMsg.Result.(int64)
+
 	// check result
 	if int64(res) != reflectRes {
 		t.Errorf("reflect result %v is different from normal result %v", reflectRes, res)

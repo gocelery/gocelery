@@ -68,6 +68,14 @@ func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, e
 	}, nil
 }
 
+// CeleryTask is an interface that represents actual task
+// Passing CeleryTask interface instead of function pointer
+// avoids reflection and may have performance gain.
+// ResultMessage must be obtained using GetResultMessage()
+type CeleryTask interface {
+	RunTask() (*ResultMessage, error)
+}
+
 // AsyncResult is pending result
 type AsyncResult struct {
 	taskID  string

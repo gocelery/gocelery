@@ -193,7 +193,11 @@ func allocResultMessage() interface{} {
 	}
 }
 
-func getResultMessage(val *reflect.Value) *ResultMessage {
+func GetResultMessage() *ResultMessage {
+	return resultMessagePool.Get().(*ResultMessage)
+}
+
+func getReflectionResultMessage(val *reflect.Value) *ResultMessage {
 	msg := resultMessagePool.Get().(*ResultMessage)
 	msg.Result = GetRealValue(val)
 	return msg
