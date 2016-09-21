@@ -13,7 +13,7 @@ type CeleryWorker struct {
 	backend         CeleryBackend
 	numWorkers      int
 	registeredTasks map[string]interface{}
-	stopChannel     chan bool
+	stopChannel     chan struct{}
 	workWG          sync.WaitGroup
 }
 
@@ -29,7 +29,7 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 
 // StartWorker starts celery worker
 func (w *CeleryWorker) StartWorker() {
-	w.stopChannel = make(chan bool, 1)
+	w.stopChannel = make(chan struct{}, 1)
 	w.workWG.Add(w.numWorkers)
 	for i := 0; i < w.numWorkers; i++ {
 		go func(workerID int) {
@@ -73,7 +73,7 @@ func (w *CeleryWorker) StartWorker() {
 // StopWorker stops celery workers
 func (w *CeleryWorker) StopWorker() {
 	// stops celery workers
-	w.stopChannel <- true
+	w.stopChannel <- struct{}{}
 }
 
 // GetNumWorkers returns number of currently running workers
