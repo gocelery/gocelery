@@ -133,10 +133,11 @@ func allocTaskMessage() interface{} {
 	}
 }
 
-func getTaskMessage(task string, args ...interface{}) *TaskMessage {
+func getTaskMessage(task string) *TaskMessage {
 	msg := taskMessagePool.Get().(*TaskMessage)
 	msg.Task = task
-	msg.Args = args
+	msg.Args = make([]interface{}, 0)
+	msg.Kwargs = make(map[string]interface{})
 	msg.ETA = time.Now().Format(time.RFC3339)
 	return msg
 }
@@ -193,8 +194,10 @@ func allocResultMessage() interface{} {
 	}
 }
 
-func GetResultMessage() *ResultMessage {
-	return resultMessagePool.Get().(*ResultMessage)
+func getResultMessage(val interface{}) *ResultMessage {
+	msg := resultMessagePool.Get().(*ResultMessage)
+	msg.Result = val
+	return msg
 }
 
 func getReflectionResultMessage(val *reflect.Value) *ResultMessage {

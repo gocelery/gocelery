@@ -50,9 +50,21 @@ func (cc *CeleryClient) StopWorker() {
 
 // Delay gets asynchronous result
 func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, error) {
-	celeryTask := getTaskMessage(task, args...)
-	defer releaseTaskMessage(celeryTask)
-	encodedMessage, err := celeryTask.Encode()
+	celeryTask := getTaskMessage(task)
+	celeryTask.Args = args
+	return cc.delay(celeryTask)
+}
+
+// DelayKwargs gets asynchronous results with argument map
+func (cc *CeleryClient) DelayKwargs(task string, args map[string]interface{}) (*AsyncResult, error) {
+	celeryTask := getTaskMessage(task)
+	celeryTask.Kwargs = args
+	return cc.delay(celeryTask)
+}
+
+func (cc *CeleryClient) delay(task *TaskMessage) (*AsyncResult, error) {
+	defer releaseTaskMessage(task)
+	encodedMessage, err := task.Encode()
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +75,7 @@ func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, e
 		return nil, err
 	}
 	return &AsyncResult{
-		taskID:  celeryTask.ID,
+		taskID:  task.ID,
 		backend: cc.backend,
 	}, nil
 }
@@ -73,7 +85,12 @@ func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, e
 // avoids reflection and may have performance gain.
 // ResultMessage must be obtained using GetResultMessage()
 type CeleryTask interface {
-	RunTask() (*ResultMessage, error)
+
+	// ParseKwargs - define a method to parse kwargs
+	ParseKwargs(map[string]interface{}) error
+
+	// RunTask - define a method to run
+	RunTask() (interface{}, error)
 }
 
 // AsyncResult is pending result

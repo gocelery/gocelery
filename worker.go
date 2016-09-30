@@ -86,11 +86,14 @@ func (w *CeleryWorker) GetNumWorkers() int {
 
 // Register registers tasks (functions)
 func (w *CeleryWorker) Register(name string, task interface{}) {
+	//log.Printf("registering task %s", name)
 	w.registeredTasks[name] = task
+	//log.Printf("registered tasks: %v", w.registeredTasks)
 }
 
 // GetTask retrieves registered task
 func (w *CeleryWorker) GetTask(name string) interface{} {
+	//log.Printf("getting tasks: %v", w.registeredTasks)
 	task, ok := w.registeredTasks[name]
 	if !ok {
 		return nil
@@ -110,8 +113,17 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) (*ResultMessage, error) {
 	// convert to task interface
 	taskInterface, ok := task.(CeleryTask)
 	if ok {
-		return taskInterface.RunTask()
+		//log.Println("using task interface")
+		if err := taskInterface.ParseKwargs(message.Kwargs); err != nil {
+			return nil, err
+		}
+		val, err := taskInterface.RunTask()
+		if err != nil {
+			return nil, err
+		}
+		return getResultMessage(val), err
 	}
+	//log.Println("using reflection")
 
 	// use reflection to execute function ptr
 	taskFunc := reflect.ValueOf(task)

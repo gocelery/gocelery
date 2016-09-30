@@ -2,7 +2,6 @@ package gocelery
 
 import (
 	"encoding/json"
-	"log"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -102,7 +101,7 @@ func (b *AMQPCeleryBroker) StartConsumingChannel() error {
 // SendCeleryMessage sends CeleryMessage to broker
 func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	taskMessage := message.GetTaskMessage()
-	log.Printf("sending task ID %s\n", taskMessage.ID)
+	//log.Printf("sending task ID %s\n", taskMessage.ID)
 	queueName := "celery"
 	_, err := b.QueueDeclare(
 		queueName, // name

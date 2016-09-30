@@ -2,7 +2,6 @@ package gocelery
 
 import (
 	"encoding/json"
-	"log"
 	"strings"
 	"time"
 
@@ -59,19 +58,19 @@ func (b *AMQPCeleryBackend) GetResult(taskID string) (*ResultMessage, error) {
 		return nil, err
 	}
 
-	log.Println("Getting result from channel")
+	//log.Println("Getting result from channel")
 
 	delivery := <-channel
 	delivery.Ack(false)
 
-	log.Println("GOT result!")
+	//log.Println("GOT result!")
 
 	var resultMessage ResultMessage
 	if err := json.Unmarshal(delivery.Body, &resultMessage); err != nil {
 		return nil, err
 	}
 
-	log.Println(resultMessage)
+	//log.Println(resultMessage)
 
 	return &resultMessage, nil
 }
