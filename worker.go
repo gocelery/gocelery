@@ -13,6 +13,7 @@ type CeleryWorker struct {
 	backend         CeleryBackend
 	numWorkers      int
 	registeredTasks map[string]interface{}
+	taskLock        sync.RWMutex
 	stopChannel     chan struct{}
 	workWG          sync.WaitGroup
 }
@@ -85,18 +86,20 @@ func (w *CeleryWorker) GetNumWorkers() int {
 
 // Register registers tasks (functions)
 func (w *CeleryWorker) Register(name string, task interface{}) {
-	//log.Printf("registering task %s", name)
+	w.taskLock.Lock()
 	w.registeredTasks[name] = task
-	//log.Printf("registered tasks: %v", w.registeredTasks)
+	w.taskLock.Unlock()
 }
 
 // GetTask retrieves registered task
 func (w *CeleryWorker) GetTask(name string) interface{} {
-	//log.Printf("getting tasks: %v", w.registeredTasks)
+	w.taskLock.RLock()
 	task, ok := w.registeredTasks[name]
 	if !ok {
+		w.taskLock.RUnlock()
 		return nil
 	}
+	w.taskLock.RUnlock()
 	return task
 }
 
