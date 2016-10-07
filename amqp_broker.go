@@ -2,6 +2,7 @@ package gocelery
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -44,6 +45,7 @@ func NewAMQPQueue(name string) *AMQPQueue {
 //AMQPCeleryBroker is RedisBroker for AMQP
 type AMQPCeleryBroker struct {
 	*amqp.Channel
+	connection       *amqp.Connection
 	exchange         *AMQPExchange
 	queue            *AMQPQueue
 	consumingChannel <-chan amqp.Delivery
@@ -51,7 +53,7 @@ type AMQPCeleryBroker struct {
 }
 
 // NewAMQPConnection creates new AMQP channel
-func NewAMQPConnection(host string) *amqp.Channel {
+func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
 	connection, err := amqp.Dial(host)
 	if err != nil {
 		panic(err)
@@ -61,17 +63,19 @@ func NewAMQPConnection(host string) *amqp.Channel {
 	if err != nil {
 		panic(err)
 	}
-	return channel
+	return connection, channel
 }
 
 // NewAMQPCeleryBroker creates new AMQPCeleryBroker
 func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
+	conn, channel := NewAMQPConnection(host)
 	// ensure exchange is initialized
 	broker := &AMQPCeleryBroker{
-		Channel:  NewAMQPConnection(host),
-		exchange: NewAMQPExchange("default"),
-		queue:    NewAMQPQueue("celery"),
-		rate:     4,
+		Channel:    channel,
+		connection: conn,
+		exchange:   NewAMQPExchange("default"),
+		queue:      NewAMQPQueue("celery"),
+		rate:       4,
 	}
 	if err := broker.CreateExchange(); err != nil {
 		panic(err)
@@ -150,13 +154,18 @@ func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 
 // GetTaskMessage retrieves task message from AMQP queue
 func (b *AMQPCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
-	delivery := <-b.consumingChannel
-	delivery.Ack(false)
 	var taskMessage TaskMessage
-	if err := json.Unmarshal(delivery.Body, &taskMessage); err != nil {
-		return nil, err
+	select {
+	case delivery := <-b.consumingChannel:
+		delivery.Ack(false)
+		if err := json.Unmarshal(delivery.Body, &taskMessage); err != nil {
+			return nil, err
+		}
+		return &taskMessage, nil
+	default:
+		return nil, fmt.Errorf("consumingChannel is empty")
 	}
-	return &taskMessage, nil
+
 }
 
 // CreateExchange declares AMQP exchange with stored configuration

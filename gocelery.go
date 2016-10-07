@@ -15,12 +15,12 @@ type CeleryClient struct {
 // CeleryBroker is interface for celery broker database
 type CeleryBroker interface {
 	SendCeleryMessage(*CeleryMessage) error
-	GetTaskMessage() (*TaskMessage, error)
+	GetTaskMessage() (*TaskMessage, error) // must be non-blocking
 }
 
 // CeleryBackend is interface for celery backend database
 type CeleryBackend interface {
-	GetResult(string) (*ResultMessage, error)
+	GetResult(string) (*ResultMessage, error) // must be non-blocking
 	SetResult(taskID string, result *ResultMessage) error
 }
 
@@ -103,14 +103,14 @@ type AsyncResult struct {
 // Get gets actual result from redis
 // It blocks for period of time set by timeout and return error if unavailable
 func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
+	ticker := time.NewTicker(50 * time.Millisecond)
 	timeoutChan := time.After(timeout)
 	for {
 		select {
 		case <-timeoutChan:
 			err := fmt.Errorf("%v timeout getting result for %s", timeout, ar.taskID)
 			return nil, err
-		default:
-			// process
+		case <-ticker.C:
 			val, err := ar.AsyncGet()
 			if err != nil {
 				continue

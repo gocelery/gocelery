@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"reflect"
 	"testing"
 	"time"
+
+	uuid "github.com/satori/go.uuid"
 )
 
 func multiply(a int, b int) int {
@@ -44,188 +47,130 @@ func (m *multiplyKwargs) RunTask() (interface{}, error) {
 	return result, nil
 }
 
-func getClients() ([]*CeleryClient, error) {
-	redisBroker := NewRedisCeleryBroker("localhost:6379", "")
-	redisBackend := NewRedisCeleryBackend("localhost:6379", "")
-	redisClient, err := NewCeleryClient(redisBroker, redisBackend, 1)
-	if err != nil {
-		return nil, err
-	}
+func getAMQPClient() (*CeleryClient, error) {
 	amqpBroker := NewAMQPCeleryBroker("amqp://")
 	amqpBackend := NewAMQPCeleryBackend("amqp://")
-	amqpClient, err := NewCeleryClient(amqpBroker, amqpBackend, 1)
+	return NewCeleryClient(amqpBroker, amqpBackend, 4)
+}
+
+func getRedisClient() (*CeleryClient, error) {
+	redisBroker := NewRedisCeleryBroker("localhost:6379", "")
+	redisBackend := NewRedisCeleryBackend("localhost:6379", "")
+	return NewCeleryClient(redisBroker, redisBackend, 1)
+}
+
+func getClients() ([]*CeleryClient, error) {
+	redisClient, err := getRedisClient()
 	if err != nil {
 		return nil, err
 	}
-	_ = amqpClient
+	amqpClient, err := getAMQPClient()
+	if err != nil {
+		return nil, err
+	}
 	return []*CeleryClient{
 		redisClient,
 		amqpClient,
 	}, nil
 }
 
-func TestWorkerClientKwargs(t *testing.T) {
+func debugLog(client *CeleryClient, format string, args ...interface{}) {
+	pre := fmt.Sprintf("client[%p] - ", client)
+	log.Printf(pre+format, args...)
+}
+
+func TestWorkerClient(t *testing.T) {
+
+	// prepare clients
 	celeryClients, err := getClients()
 	if err != nil {
-		t.Errorf("failed to create CeleryClients: %v", err)
+		t.Errorf("failed to create clients")
+		return
 	}
-	taskName := "multiply_kwargs"
-	for _, celeryClient := range celeryClients {
 
-		celeryClient.Register(taskName, &multiplyKwargs{})
-		go celeryClient.StartWorker()
+	for i := 0; i < 2; i++ {
 
-		arg1 := rand.Intn(10)
-		arg2 := rand.Intn(10)
-		expected := arg1 * arg2
-		ar, err := celeryClient.DelayKwargs(taskName, map[string]interface{}{
-			"a": arg1,
-			"b": arg2,
-		})
-		if err != nil {
-			t.Errorf("failed to submit task: %v", err)
-			return
-		}
-		val, err := ar.Get(5 * time.Second)
-		if err != nil {
-			t.Errorf("failed to get result: %v", err)
-			return
-		}
-		actual := int(val.(float64))
-		if actual != expected {
-			t.Errorf("returned result %v is different from expected value %v", actual, expected)
-			return
-		}
+		kwargTaskName := uuid.NewV4().String()
+		kwargTask := &multiplyKwargs{}
 
-		celeryClient.StopWorker()
+		argTaskName := uuid.NewV4().String()
+		argTask := multiply
+
+		for j := 0; j < 2; j++ {
+			for _, celeryClient := range celeryClients {
+
+				debugLog(celeryClient, "registering kwarg task %s %p", kwargTaskName, kwargTask)
+				celeryClient.Register(kwargTaskName, kwargTask)
+
+				debugLog(celeryClient, "registering arg task %s %p", argTaskName, argTask)
+				celeryClient.Register(argTaskName, argTask)
+
+				debugLog(celeryClient, "starting worker")
+				celeryClient.StartWorker()
+
+				arg1 := rand.Intn(100)
+				arg2 := rand.Intn(100)
+				expected := arg1 * arg2
+
+				debugLog(celeryClient, "submitting tasks")
+				kwargAsyncResult, err := celeryClient.DelayKwargs(kwargTaskName, map[string]interface{}{
+					"a": arg1,
+					"b": arg2,
+				})
+				if err != nil {
+					t.Errorf("failed to submit kwarg task %s: %v", kwargTaskName, err)
+					return
+				}
+
+				argAsyncResult, err := celeryClient.Delay(argTaskName, arg1, arg2)
+				if err != nil {
+					t.Errorf("failed to submit arg task %s: %v", argTaskName, err)
+					return
+				}
+
+				debugLog(celeryClient, "waiting for result")
+				kwargVal, err := kwargAsyncResult.Get(10 * time.Second)
+				if err != nil {
+					t.Errorf("failed to get result: %v", err)
+					return
+				}
+
+				debugLog(celeryClient, "validating result")
+				actual := int(kwargVal.(float64))
+				if actual != expected {
+					t.Errorf("returned result %v is different from expected value %v", actual, expected)
+					return
+				}
+
+				debugLog(celeryClient, "waiting for result")
+				argVal, err := argAsyncResult.Get(10 * time.Second)
+				if err != nil {
+					t.Errorf("failed to get result: %v", err)
+					return
+				}
+
+				debugLog(celeryClient, "validating result")
+				actual = int(argVal.(float64))
+				if actual != expected {
+					t.Errorf("returned result %v is different from expected value %v", actual, expected)
+					return
+				}
+
+				debugLog(celeryClient, "stopping worker")
+				celeryClient.StopWorker()
+			}
+		}
 	}
 
 }
 
-func TestWorkerClientArgs(t *testing.T) {
-	celeryClients, err := getClients()
-	if err != nil {
-		t.Errorf("failed to create CeleryClients: %v", err)
-	}
-	taskName := "multiply"
-
-	for _, celeryClient := range celeryClients {
-
-		celeryClient.Register("multiply", multiply)
-		go celeryClient.StartWorker()
-
-		log.Printf("worker started")
-
-		arg1 := rand.Intn(10)
-		arg2 := rand.Intn(10)
-		expected := arg1 * arg2
-
-		ar, err := celeryClient.Delay(taskName, arg1, arg2)
-		if err != nil {
-			t.Errorf("failed to submit task: %v", err)
-			return
-		}
-
-		log.Printf("async result got")
-
-		val, err := ar.Get(5 * time.Second)
-		if err != nil {
-			t.Errorf("failed to get result: %v", err)
-			return
-		}
-		actual := int(val.(float64))
-		if actual != expected {
-			t.Errorf("returned result %v is different from expected value %v", actual, expected)
-			return
-		}
-		celeryClient.StopWorker()
-	}
-
-}
-
-/*
-func TestWorkerClientArgs(t *testing.T) {
-
-	celeryClients, err := getClients()
-	if err != nil {
-		t.Errorf("failed to create CeleryClient: %v", err)
-	}
-	taskName := "multiply"
-
-	for _, celeryClient := range celeryClients {
-		celeryClient.Register(taskName, multiply)
-
-		arg1 := rand.Intn(10)
-		arg2 := rand.Intn(10)
-		expected := arg1 * arg2
-
-		var args []interface{}
-		args = append(args, arg1)
-		args = append(args, arg2)
-
-		ar, err := celeryClient.Delay(taskName, args...)
-		if err != nil {
-			t.Errorf("failed to submit task: %v", err)
-			return
-		}
-
-			ready, err := ar.Ready()
-			if err == nil {
-				t.Errorf("backend is empty and should throw error since result is unavailable")
-				return
-			}
-
-		go celeryClient.StartWorker()
-
-		val, err := ar.Get(5 * time.Second)
-		if err != nil {
-			t.Errorf("failed to get result: %v", err)
-			return
-		}
-
-			ready, err = ar.Ready()
-			if err != nil {
-				t.Errorf("failed to get status: %v", err)
-				return
-			}
-			if !ready {
-				t.Errorf("result should be available by now")
-				return
-			}
-
-			// repeat get for cache effect
-			cachedVal, err := ar.Get(1 * time.Second)
-			if err != nil {
-				t.Errorf("failed to get result: %v", err)
-				return
-			}
-
-			if !reflect.DeepEqual(val, cachedVal) {
-				t.Errorf("failed to retrieve cached val %v that should be same as %v", cachedVal, val)
-				return
-			}
-
-		// number is always returned as float64
-		// due to json parser limitation in golang
-		actual := int(val.(float64))
-
-		if actual != expected {
-			t.Errorf("returned result %v is different from expected value %v", actual, expected)
-			return
-		}
-		celeryClient.StopWorker()
-	}
-}
-*/
-
-/*
 func TestRegister(t *testing.T) {
 	celeryClients, err := getClients()
 	if err != nil {
 		t.Errorf("failed to create CeleryClients: %v", err)
 		return
 	}
-	taskName := "multiply"
+	taskName := uuid.NewV4().String()
 
 	for _, celeryClient := range celeryClients {
 		celeryClient.Register(taskName, multiply)
@@ -237,6 +182,7 @@ func TestRegister(t *testing.T) {
 	}
 }
 
+/*
 func TestBlockingGet(t *testing.T) {
 	celeryClients, err := getClients()
 	if err != nil {

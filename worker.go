@@ -29,8 +29,10 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 
 // StartWorker starts celery worker
 func (w *CeleryWorker) StartWorker() {
+
 	w.stopChannel = make(chan struct{}, 1)
 	w.workWG.Add(w.numWorkers)
+
 	for i := 0; i < w.numWorkers; i++ {
 		go func(workerID int) {
 			defer w.workWG.Done()
@@ -39,13 +41,14 @@ func (w *CeleryWorker) StartWorker() {
 				case <-w.stopChannel:
 					return
 				default:
+
 					// process messages
 					taskMessage, err := w.broker.GetTaskMessage()
 					if err != nil || taskMessage == nil {
 						continue
 					}
 
-					log.Printf("WORKER %d task message received: %v\n", workerID, taskMessage)
+					//log.Printf("WORKER %d task message received: %v\n", workerID, taskMessage)
 
 					// run task
 					resultMsg, err := w.RunTask(taskMessage)
@@ -65,14 +68,14 @@ func (w *CeleryWorker) StartWorker() {
 			}
 		}(i)
 	}
-	// wait until all tasks are done
-	w.workWG.Wait()
 }
 
 // StopWorker stops celery workers
 func (w *CeleryWorker) StopWorker() {
-	// stops celery workers
-	w.stopChannel <- struct{}{}
+	for i := 0; i < w.numWorkers; i++ {
+		w.stopChannel <- struct{}{}
+	}
+	w.workWG.Wait()
 }
 
 // GetNumWorkers returns number of currently running workers
