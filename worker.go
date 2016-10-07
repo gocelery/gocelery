@@ -29,8 +29,10 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 
 // StartWorker starts celery worker
 func (w *CeleryWorker) StartWorker() {
+
 	w.stopChannel = make(chan struct{}, 1)
 	w.workWG.Add(w.numWorkers)
+
 	for i := 0; i < w.numWorkers; i++ {
 		go func(workerID int) {
 			defer w.workWG.Done()
@@ -39,25 +41,25 @@ func (w *CeleryWorker) StartWorker() {
 				case <-w.stopChannel:
 					return
 				default:
+
 					// process messages
 					taskMessage, err := w.broker.GetTaskMessage()
 					if err != nil || taskMessage == nil {
 						continue
 					}
 
-					log.Printf("WORKER %d task message received: %v\n", workerID, taskMessage)
+					//log.Printf("WORKER %d task message received: %v\n", workerID, taskMessage)
 
 					// run task
-					val, err := w.RunTask(taskMessage)
+					resultMsg, err := w.RunTask(taskMessage)
 					if err != nil {
 						log.Println(err)
 						continue
 					}
+					defer releaseResultMessage(resultMsg)
 
 					// push result to backend
-					resultMessage := getResultMessage(val)
-					err = w.backend.SetResult(taskMessage.ID, resultMessage)
-					releaseResultMessage(resultMessage)
+					err = w.backend.SetResult(taskMessage.ID, resultMsg)
 					if err != nil {
 						log.Println(err)
 						continue
@@ -66,14 +68,14 @@ func (w *CeleryWorker) StartWorker() {
 			}
 		}(i)
 	}
-	// wait until all tasks are done
-	w.workWG.Wait()
 }
 
 // StopWorker stops celery workers
 func (w *CeleryWorker) StopWorker() {
-	// stops celery workers
-	w.stopChannel <- struct{}{}
+	for i := 0; i < w.numWorkers; i++ {
+		w.stopChannel <- struct{}{}
+	}
+	w.workWG.Wait()
 }
 
 // GetNumWorkers returns number of currently running workers
@@ -83,11 +85,14 @@ func (w *CeleryWorker) GetNumWorkers() int {
 
 // Register registers tasks (functions)
 func (w *CeleryWorker) Register(name string, task interface{}) {
+	//log.Printf("registering task %s", name)
 	w.registeredTasks[name] = task
+	//log.Printf("registered tasks: %v", w.registeredTasks)
 }
 
 // GetTask retrieves registered task
 func (w *CeleryWorker) GetTask(name string) interface{} {
+	//log.Printf("getting tasks: %v", w.registeredTasks)
 	task, ok := w.registeredTasks[name]
 	if !ok {
 		return nil
@@ -96,12 +101,35 @@ func (w *CeleryWorker) GetTask(name string) interface{} {
 }
 
 // RunTask runs celery task
-func (w *CeleryWorker) RunTask(message *TaskMessage) (*reflect.Value, error) {
+func (w *CeleryWorker) RunTask(message *TaskMessage) (*ResultMessage, error) {
+
+	// get task
 	task := w.GetTask(message.Task)
 	if task == nil {
 		return nil, fmt.Errorf("task %s is not registered", message.Task)
 	}
+
+	// convert to task interface
+	taskInterface, ok := task.(CeleryTask)
+	if ok {
+		//log.Println("using task interface")
+		if err := taskInterface.ParseKwargs(message.Kwargs); err != nil {
+			return nil, err
+		}
+		val, err := taskInterface.RunTask()
+		if err != nil {
+			return nil, err
+		}
+		return getResultMessage(val), err
+	}
+	//log.Println("using reflection")
+
+	// use reflection to execute function ptr
 	taskFunc := reflect.ValueOf(task)
+	return runTaskFunc(&taskFunc, message)
+}
+
+func runTaskFunc(taskFunc *reflect.Value, message *TaskMessage) (*ResultMessage, error) {
 
 	// check number of arguments
 	numArgs := taskFunc.Type().NumIn()
@@ -128,5 +156,6 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) (*reflect.Value, error) {
 	if len(res) == 0 {
 		return nil, nil
 	}
-	return &res[0], nil
+	//defer releaseResultMessage(resultMessage)
+	return getReflectionResultMessage(&res[0]), nil
 }

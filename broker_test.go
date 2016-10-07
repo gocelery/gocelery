@@ -8,7 +8,8 @@ import (
 )
 
 func makeCeleryMessage() (*CeleryMessage, error) {
-	taskMessage := getTaskMessage("add", rand.Intn(10), rand.Intn(10))
+	taskMessage := getTaskMessage("add")
+	taskMessage.Args = []interface{}{rand.Intn(10), rand.Intn(10)}
 	defer releaseTaskMessage(taskMessage)
 	encodedTaskMessage, err := taskMessage.Encode()
 	if err != nil {
@@ -21,7 +22,7 @@ func makeCeleryMessage() (*CeleryMessage, error) {
 func getBrokers() []CeleryBroker {
 	return []CeleryBroker{
 		NewRedisCeleryBroker("localhost:6379", ""),
-		NewAMQPCeleryBroker("amqp://"),
+		//NewAMQPCeleryBroker("amqp://"),
 	}
 }
 

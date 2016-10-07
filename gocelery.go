@@ -15,12 +15,12 @@ type CeleryClient struct {
 // CeleryBroker is interface for celery broker database
 type CeleryBroker interface {
 	SendCeleryMessage(*CeleryMessage) error
-	GetTaskMessage() (*TaskMessage, error)
+	GetTaskMessage() (*TaskMessage, error) // must be non-blocking
 }
 
 // CeleryBackend is interface for celery backend database
 type CeleryBackend interface {
-	GetResult(string) (*ResultMessage, error)
+	GetResult(string) (*ResultMessage, error) // must be non-blocking
 	SetResult(taskID string, result *ResultMessage) error
 }
 
@@ -50,9 +50,21 @@ func (cc *CeleryClient) StopWorker() {
 
 // Delay gets asynchronous result
 func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, error) {
-	celeryTask := getTaskMessage(task, args...)
-	defer releaseTaskMessage(celeryTask)
-	encodedMessage, err := celeryTask.Encode()
+	celeryTask := getTaskMessage(task)
+	celeryTask.Args = args
+	return cc.delay(celeryTask)
+}
+
+// DelayKwargs gets asynchronous results with argument map
+func (cc *CeleryClient) DelayKwargs(task string, args map[string]interface{}) (*AsyncResult, error) {
+	celeryTask := getTaskMessage(task)
+	celeryTask.Kwargs = args
+	return cc.delay(celeryTask)
+}
+
+func (cc *CeleryClient) delay(task *TaskMessage) (*AsyncResult, error) {
+	defer releaseTaskMessage(task)
+	encodedMessage, err := task.Encode()
 	if err != nil {
 		return nil, err
 	}
@@ -63,9 +75,22 @@ func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, e
 		return nil, err
 	}
 	return &AsyncResult{
-		taskID:  celeryTask.ID,
+		taskID:  task.ID,
 		backend: cc.backend,
 	}, nil
+}
+
+// CeleryTask is an interface that represents actual task
+// Passing CeleryTask interface instead of function pointer
+// avoids reflection and may have performance gain.
+// ResultMessage must be obtained using GetResultMessage()
+type CeleryTask interface {
+
+	// ParseKwargs - define a method to parse kwargs
+	ParseKwargs(map[string]interface{}) error
+
+	// RunTask - define a method to run
+	RunTask() (interface{}, error)
 }
 
 // AsyncResult is pending result
@@ -78,14 +103,14 @@ type AsyncResult struct {
 // Get gets actual result from redis
 // It blocks for period of time set by timeout and return error if unavailable
 func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
+	ticker := time.NewTicker(50 * time.Millisecond)
 	timeoutChan := time.After(timeout)
 	for {
 		select {
 		case <-timeoutChan:
 			err := fmt.Errorf("%v timeout getting result for %s", timeout, ar.taskID)
 			return nil, err
-		default:
-			// process
+		case <-ticker.C:
 			val, err := ar.AsyncGet()
 			if err != nil {
 				continue

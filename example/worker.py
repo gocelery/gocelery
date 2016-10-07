@@ -19,3 +19,7 @@ app.conf.update(
 @app.task
 def add(x, y):
     return x + y
+
+@app.task
+def add_reflect(x, y):
+    return x + y
