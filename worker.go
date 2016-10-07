@@ -5,8 +5,6 @@ import (
 	"log"
 	"reflect"
 	"sync"
-
-	"github.com/satori/go.uuid"
 )
 
 // CeleryWorker represents distributed task worker
@@ -15,7 +13,7 @@ type CeleryWorker struct {
 	backend         CeleryBackend
 	numWorkers      int
 	registeredTasks map[string]interface{}
-	stopChannel     chan bool
+	stopChannel     chan struct{}
 	workWG          sync.WaitGroup
 }
 
@@ -31,12 +29,10 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 
 // StartWorker starts celery worker
 func (w *CeleryWorker) StartWorker() {
-	w.stopChannel = make(chan bool, 1)
+	w.stopChannel = make(chan struct{}, 1)
 	w.workWG.Add(w.numWorkers)
 	for i := 0; i < w.numWorkers; i++ {
-		// generate uuid
-		workerID := uuid.NewV4().String()
-		go func() {
+		go func(workerID int) {
 			defer w.workWG.Done()
 			for {
 				select {
@@ -49,7 +45,7 @@ func (w *CeleryWorker) StartWorker() {
 						continue
 					}
 
-					log.Printf("WORKER %s task message received: %v\n", workerID, taskMessage)
+					log.Printf("WORKER %d task message received: %v\n", workerID, taskMessage)
 
 					// run task
 					resultMsg, err := w.RunTask(taskMessage)
@@ -67,7 +63,7 @@ func (w *CeleryWorker) StartWorker() {
 					}
 				}
 			}
-		}()
+		}(i)
 	}
 	// wait until all tasks are done
 	w.workWG.Wait()
@@ -76,7 +72,7 @@ func (w *CeleryWorker) StartWorker() {
 // StopWorker stops celery workers
 func (w *CeleryWorker) StopWorker() {
 	// stops celery workers
-	w.stopChannel <- true
+	w.stopChannel <- struct{}{}
 }
 
 // GetNumWorkers returns number of currently running workers
