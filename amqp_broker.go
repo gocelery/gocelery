@@ -2,7 +2,6 @@ package gocelery
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/streadway/amqp"
