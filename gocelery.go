@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+// RoutingKey specifies the routing and exchange destination
+var RoutingKey = "celery"
+
 // CeleryClient provides API for sending celery tasks
 type CeleryClient struct {
 	broker  CeleryBroker

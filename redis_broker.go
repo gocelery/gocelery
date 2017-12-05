@@ -46,7 +46,7 @@ func NewRedisPool(host, pass string) *redis.Pool {
 func NewRedisCeleryBroker(host, pass string) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
 		Pool:      NewRedisPool(host, pass),
-		queueName: "celery",
+		queueName: RoutingKey,
 	}
 }
 

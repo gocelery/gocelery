@@ -40,8 +40,8 @@ var celeryMessagePool = sync.Pool{
 				ReplyTo:       uuid.NewV4().String(),
 				DeliveryInfo: CeleryDeliveryInfo{
 					Priority:   0,
-					RoutingKey: "celery",
-					Exchange:   "celery",
+					RoutingKey: RoutingKey,
+					Exchange:   RoutingKey,
 				},
 				DeliveryMode: 2,
 				DeliveryTag:  uuid.NewV4().String(),
