@@ -40,8 +40,8 @@ var celeryMessagePool = sync.Pool{
 				ReplyTo:       uuid.NewV4().String(),
 				DeliveryInfo: CeleryDeliveryInfo{
 					Priority:   0,
-					RoutingKey: RoutingKey,
-					Exchange:   RoutingKey,
+					RoutingKey: "celery",
+					Exchange:   "celery",
 				},
 				DeliveryMode: 2,
 				DeliveryTag:  uuid.NewV4().String(),
@@ -51,9 +51,11 @@ var celeryMessagePool = sync.Pool{
 	},
 }
 
-func getCeleryMessage(encodedTaskMessage string) *CeleryMessage {
+func getCeleryMessage(encodedTaskMessage, exchange string) *CeleryMessage {
 	msg := celeryMessagePool.Get().(*CeleryMessage)
 	msg.Body = encodedTaskMessage
+	msg.Properties.DeliveryInfo.RoutingKey = exchange
+	msg.Properties.DeliveryInfo.Exchange = exchange
 	return msg
 }
 
