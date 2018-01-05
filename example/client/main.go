@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/shicky/gocelery"
+	"github.com/gocelery/gocelery"
 )
 
 // Run Celery Worker First!
