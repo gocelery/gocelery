@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	uuid "github.com/satori/go.uuid"
 )
 
 func multiply(a int, b int) int {
@@ -90,10 +88,10 @@ func TestWorkerClient(t *testing.T) {
 
 	for i := 0; i < 2; i++ {
 
-		kwargTaskName := uuid.NewV4().String()
+		kwargTaskName := generateUUID()
 		kwargTask := &multiplyKwargs{}
 
-		argTaskName := uuid.NewV4().String()
+		argTaskName := generateUUID()
 		argTask := multiply
 
 		for j := 0; j < 2; j++ {
@@ -170,7 +168,7 @@ func TestRegister(t *testing.T) {
 		t.Errorf("failed to create CeleryClients: %v", err)
 		return
 	}
-	taskName := uuid.NewV4().String()
+	taskName := generateUUID()
 
 	for _, celeryClient := range celeryClients {
 		celeryClient.Register(taskName, multiply)

@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"sync"
 	"time"
-
-	"github.com/satori/go.uuid"
 )
 
 // CeleryMessage is actual message to be sent to Redis
@@ -23,9 +21,9 @@ type CeleryMessage struct {
 func (cm *CeleryMessage) reset() {
 	cm.Headers = nil
 	cm.Body = ""
-	cm.Properties.CorrelationID = uuid.NewV4().String()
-	cm.Properties.ReplyTo = uuid.NewV4().String()
-	cm.Properties.DeliveryTag = uuid.NewV4().String()
+	cm.Properties.CorrelationID = generateUUID()
+	cm.Properties.ReplyTo = generateUUID()
+	cm.Properties.DeliveryTag = generateUUID()
 }
 
 var celeryMessagePool = sync.Pool{
@@ -36,15 +34,15 @@ var celeryMessagePool = sync.Pool{
 			ContentType: "application/json",
 			Properties: CeleryProperties{
 				BodyEncoding:  "base64",
-				CorrelationID: uuid.NewV4().String(),
-				ReplyTo:       uuid.NewV4().String(),
+				CorrelationID: generateUUID(),
+				ReplyTo:       generateUUID(),
 				DeliveryInfo: CeleryDeliveryInfo{
 					Priority:   0,
 					RoutingKey: "celery",
 					Exchange:   "celery",
 				},
 				DeliveryMode: 2,
-				DeliveryTag:  uuid.NewV4().String(),
+				DeliveryTag:  generateUUID(),
 			},
 			ContentEncoding: "utf-8",
 		}
@@ -116,7 +114,7 @@ type TaskMessage struct {
 }
 
 func (tm *TaskMessage) reset() {
-	tm.ID = uuid.NewV4().String()
+	tm.ID = generateUUID()
 	tm.Task = ""
 	tm.Args = nil
 	tm.Kwargs = nil
@@ -125,7 +123,7 @@ func (tm *TaskMessage) reset() {
 var taskMessagePool = sync.Pool{
 	New: func() interface{} {
 		return &TaskMessage{
-			ID:      uuid.NewV4().String(),
+			ID:      generateUUID(),
 			Retries: 0,
 			Kwargs:  nil,
 			ETA:     time.Now().Format(time.RFC3339),

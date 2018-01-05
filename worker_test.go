@@ -4,8 +4,6 @@ import (
 	"math/rand"
 	"testing"
 	"time"
-
-	"github.com/satori/go.uuid"
 )
 
 // add is test task method
@@ -53,7 +51,7 @@ func TestRunTask(t *testing.T) {
 
 	// construct task message
 	taskMessage := &TaskMessage{
-		ID:      uuid.NewV4().String(),
+		ID:      generateUUID(),
 		Task:    taskName,
 		Args:    args,
 		Kwargs:  nil,
