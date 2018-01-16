@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/satori/go.uuid"
+	"gopkg.in/satori/go.uuid.v1"
 )
 
 // add is test task method

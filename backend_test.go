@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/satori/go.uuid"
+	"gopkg.in/satori/go.uuid.v1"
 )
 
 func getBackends() []CeleryBackend {
