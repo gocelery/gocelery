@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"gopkg.in/satori/go.uuid.v1"
 )
 
 func multiply(a int, b int) int {

@@ -7,9 +7,10 @@ import (
 
 // CeleryClient provides API for sending celery tasks
 type CeleryClient struct {
-	broker  CeleryBroker
-	backend CeleryBackend
-	worker  *CeleryWorker
+	broker   CeleryBroker
+	backend  CeleryBackend
+	worker   *CeleryWorker
+	exchange string
 }
 
 // CeleryBroker is interface for celery broker database
@@ -25,11 +26,12 @@ type CeleryBackend interface {
 }
 
 // NewCeleryClient creates new celery client
-func NewCeleryClient(broker CeleryBroker, backend CeleryBackend, numWorkers int) (*CeleryClient, error) {
+func NewCeleryClient(broker CeleryBroker, backend CeleryBackend, numWorkers int, exchange string) (*CeleryClient, error) {
 	return &CeleryClient{
 		broker,
 		backend,
 		NewCeleryWorker(broker, backend, numWorkers),
+		exchange,
 	}, nil
 }
 
@@ -68,7 +70,7 @@ func (cc *CeleryClient) delay(task *TaskMessage) (*AsyncResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	celeryMessage := getCeleryMessage(encodedMessage)
+	celeryMessage := getCeleryMessage(encodedMessage, cc.exchange)
 	defer releaseCeleryMessage(celeryMessage)
 	err = cc.broker.SendCeleryMessage(celeryMessage)
 	if err != nil {

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/satori/go.uuid"
+	"gopkg.in/satori/go.uuid.v1"
 )
 
 // CeleryMessage is actual message to be sent to Redis
@@ -51,9 +51,11 @@ var celeryMessagePool = sync.Pool{
 	},
 }
 
-func getCeleryMessage(encodedTaskMessage string) *CeleryMessage {
+func getCeleryMessage(encodedTaskMessage, exchange string) *CeleryMessage {
 	msg := celeryMessagePool.Get().(*CeleryMessage)
 	msg.Body = encodedTaskMessage
+	msg.Properties.DeliveryInfo.RoutingKey = exchange
+	msg.Properties.DeliveryInfo.Exchange = exchange
 	return msg
 }
 
