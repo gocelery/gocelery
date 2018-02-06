@@ -13,9 +13,9 @@ type RedisCeleryBackend struct {
 }
 
 // NewRedisCeleryBackend creates new RedisCeleryBackend
-func NewRedisCeleryBackend(host, pass string) *RedisCeleryBackend {
+func NewRedisCeleryBackend(host string, db int, pass string) *RedisCeleryBackend {
 	return &RedisCeleryBackend{
-		Pool: NewRedisPool(host, pass),
+		Pool: NewRedisPool(host, db, pass),
 	}
 }
 

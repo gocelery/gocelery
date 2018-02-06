@@ -12,18 +12,32 @@ import (
 // RedisCeleryBroker is CeleryBroker for Redis
 type RedisCeleryBroker struct {
 	*redis.Pool
-	queueName   string
+	QueueName   string
 	stopChannel chan bool
 	workWG      sync.WaitGroup
 }
 
+type BrokerOptions struct {
+	f func(*brokerOptions)
+}
+
+type brokerOptions struct {
+	QueueName string
+}
+
+func BrokerQueueName(queueName string) BrokerOptions {
+	return BrokerOptions{func(options *brokerOptions) {
+		options.QueueName = queueName
+	}}
+}
+
 // NewRedisPool creates pool of redis connections
-func NewRedisPool(host, pass string) *redis.Pool {
+func NewRedisPool(host string, db int, pass string) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     3,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", host)
+			c, err := redis.Dial("tcp", host, redis.DialDatabase(db))
 			if err != nil {
 				return nil, err
 			}
@@ -43,10 +57,14 @@ func NewRedisPool(host, pass string) *redis.Pool {
 }
 
 // NewRedisCeleryBroker creates new RedisCeleryBroker
-func NewRedisCeleryBroker(host, pass string) *RedisCeleryBroker {
+func NewRedisCeleryBroker(host string, db int, pass string, options ...BrokerOptions) *RedisCeleryBroker {
+	do := brokerOptions{"celery"}
+	for _, opt := range options {
+		opt.f(&do)
+	}
 	return &RedisCeleryBroker{
-		Pool:      NewRedisPool(host, pass),
-		queueName: "celery",
+		Pool:      NewRedisPool(host, db, pass),
+		QueueName: do.QueueName,
 	}
 }
 
@@ -58,7 +76,7 @@ func (cb *RedisCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	}
 	conn := cb.Get()
 	defer conn.Close()
-	_, err = conn.Do("LPUSH", cb.queueName, jsonBytes)
+	_, err = conn.Do("LPUSH", cb.QueueName, jsonBytes)
 	if err != nil {
 		return err
 	}
@@ -69,7 +87,7 @@ func (cb *RedisCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 	conn := cb.Get()
 	defer conn.Close()
-	messageJSON, err := conn.Do("BLPOP", cb.queueName, "1")
+	messageJSON, err := conn.Do("BLPOP", cb.QueueName, "1")
 	if err != nil {
 		return nil, err
 	}
