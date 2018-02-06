@@ -54,8 +54,8 @@ func add(a int, b int) int {
 
 func main() {
     // create broker and backend
-	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
-    celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", 0, "pass", gocelery.BrokerQueueName("queue-busy"))
+    celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", 0,  "pass")
 
     // use AMQP instead
     // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
