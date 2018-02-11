@@ -6,8 +6,6 @@ import (
 	"math/rand"
 	"reflect"
 	"testing"
-
-	"github.com/satori/go.uuid"
 )
 
 func getBackends() []CeleryBackend {
@@ -20,7 +18,7 @@ func getBackends() []CeleryBackend {
 // TestGetResult is Redis specific test to get result from backend
 func TestGetResult(t *testing.T) {
 	backend := NewRedisCeleryBackend("localhost:6379", "")
-	taskID := uuid.NewV4().String()
+	taskID := generateUUID()
 
 	// value must be float64 for testing due to json limitation
 	value := reflect.ValueOf(rand.Float64())
@@ -49,7 +47,7 @@ func TestGetResult(t *testing.T) {
 // TestSetResult is Redis specific test to set result to backend
 func TestSetResult(t *testing.T) {
 	backend := NewRedisCeleryBackend("localhost:6379", "")
-	taskID := uuid.NewV4().String()
+	taskID := generateUUID()
 	value := reflect.ValueOf(rand.Float64())
 	resultMessage := getReflectionResultMessage(&value)
 	releaseResultMessage(resultMessage)
@@ -80,7 +78,7 @@ func TestSetResult(t *testing.T) {
 // TestSetGetResult tests set/get result feature for all backends
 func TestSetGetResult(t *testing.T) {
 	for _, backend := range getBackends() {
-		taskID := uuid.NewV4().String()
+		taskID := generateUUID()
 		value := reflect.ValueOf(rand.Float64())
 		resultMessage := getReflectionResultMessage(&value)
 		defer releaseResultMessage(resultMessage)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shicky/gocelery"
+	"github.com/gocelery/gocelery"
 )
 
 // Celery Task using args
