@@ -160,6 +160,7 @@ func main() {
         // use AMQP instead
         // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
         // celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
+        // defer celeryBroker.CloseConnection()
 
         // create client
         celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 0)
