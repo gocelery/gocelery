@@ -57,7 +57,6 @@ func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
 	if err != nil {
 		panic(err)
 	}
-	//defer connection.Close()
 	channel, err := connection.Channel()
 	if err != nil {
 		panic(err)
@@ -186,4 +185,8 @@ func (b *AMQPCeleryBroker) CreateQueue() error {
 		nil,
 	)
 	return err
+}
+
+func (b *AMQPCeleryBroker) CloseConnection() {
+	b.connection.Close()
 }

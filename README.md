@@ -49,30 +49,30 @@ Run Celery Worker implemented in Go
 
 // Celery Task
 func add(a int, b int) int {
-	return a + b
+	   return a + b
 }
 
 func main() {
-    // create broker and backend
-	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
-    celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+        // create broker and backend
+        celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
+        celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
 
-    // use AMQP instead
-    // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
-    // celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
+        // use AMQP instead
+        // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
+        // celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
 
-	// Configure with 2 celery workers
-	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 2)
+        // Configure with 2 celery workers
+        celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 2)
 
-	// worker.add name reflects "add" task method found in "worker.py"
-	celeryClient.Register("worker.add", add)
+        // worker.add name reflects "add" task method found in "worker.py"
+        celeryClient.Register("worker.add", add)
 
-    // Start Worker - blocking method
-	go celeryClient.StartWorker()
+        // Start Worker - blocking method
+        go celeryClient.StartWorker()
 
-    // Wait 30 seconds and stop all workers
-	time.Sleep(30 * time.Second)
-	celeryClient.StopWorker()
+        // Wait 30 seconds and stop all workers
+        time.Sleep(30 * time.Second)
+        celeryClient.StopWorker()
 }
 ```
 ```bash
@@ -84,11 +84,11 @@ You can use custom struct instead to hold shared structures.
 ```go
 
 type MyStruct struct {
-	MyInt int
+	   MyInt int
 }
 
 func (so *MyStruct) add(a int, b int) int {
-	return a + b + so.MyInt
+	   return a + b + so.MyInt
 }
 
 // code omitted ...
@@ -153,34 +153,34 @@ Submit Task from Go Client
 
 ```go
 func main() {
-    // create broker and backend
-	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
-    celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+        // create broker and backend
+        celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
+        celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
 
-    // use AMQP instead
-    // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
-    // celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
+        // use AMQP instead
+        // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
+        // celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
 
-    // create client
-	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 0)
+        // create client
+        celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 0)
 
-    // send task
-	asyncResult, err := celeryClient.Delay("worker.add", 3, 5)
-	if err != nil {
-		panic(err)
-	}
+        // send task
+        asyncResult, err := celeryClient.Delay("worker.add", 3, 5)
+        if err != nil {
+        	panic(err)
+        }
 
-    // check if result is ready
-	isReady, _ := asyncResult.Ready()
-	fmt.Printf("ready status %v\n", isReady)
+        // check if result is ready
+        isReady, _ := asyncResult.Ready()
+        fmt.Printf("ready status %v\n", isReady)
 
-    // get result with 5s timeout
-	res, err = asyncResult.Get(5 * time.Second)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-        fmt.Println(res)
-    }
+        // get result with 5s timeout
+        res, err = asyncResult.Get(5 * time.Second)
+        if err != nil {
+        	fmt.Println(err)
+        } else {
+            fmt.Println(res)
+        }
 }
 ```
 
