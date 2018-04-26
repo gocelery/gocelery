@@ -2,10 +2,13 @@ package gocelery
 
 import (
 	"encoding/json"
-	"time"
-
+	"fmt"
 	"github.com/streadway/amqp"
+	"time"
 )
+
+const DEFAULT_EXCHANGE_NAME = "default"
+const DEFAULT_QUEUE_NAME = "celery"
 
 // AMQPExchange stores AMQP Exchange configuration
 type AMQPExchange struct {
@@ -66,14 +69,20 @@ func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
 }
 
 // NewAMQPCeleryBroker creates new AMQPCeleryBroker
-func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
+func NewAMQPCeleryBroker(host string, exchange *AMQPExchange, queue *AMQPQueue) *AMQPCeleryBroker {
 	conn, channel := NewAMQPConnection(host)
 	// ensure exchange is initialized
+	if exchange == nil {
+		exchange = NewAMQPExchange(DEFAULT_EXCHANGE_NAME)
+	}
+	if queue == nil {
+		queue = NewAMQPQueue(DEFAULT_QUEUE_NAME)
+	}
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
 		connection: conn,
-		exchange:   NewAMQPExchange("default"),
-		queue:      NewAMQPQueue("celery"),
+		exchange:   exchange,
+		queue:      queue,
 		rate:       4,
 	}
 	if err := broker.CreateExchange(); err != nil {
@@ -105,30 +114,7 @@ func (b *AMQPCeleryBroker) StartConsumingChannel() error {
 func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	taskMessage := message.GetTaskMessage()
 	//log.Printf("sending task ID %s\n", taskMessage.ID)
-	queueName := "celery"
-	_, err := b.QueueDeclare(
-		queueName, // name
-		true,      // durable
-		false,     // autoDelete
-		false,     // exclusive
-		false,     // noWait
-		nil,       // args
-	)
-	if err != nil {
-		return err
-	}
-	err = b.ExchangeDeclare(
-		"default",
-		"direct",
-		true,
-		true,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		return err
-	}
+	queueName := b.queue.Name
 
 	resBytes, err := json.Marshal(taskMessage)
 	if err != nil {
@@ -156,6 +142,7 @@ func (b *AMQPCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
 	delivery := <-b.consumingChannel
 	delivery.Ack(false)
 	var taskMessage TaskMessage
+	fmt.Println(delivery.Body)
 	if err := json.Unmarshal(delivery.Body, &taskMessage); err != nil {
 		return nil, err
 	}
