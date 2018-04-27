@@ -142,7 +142,6 @@ func (b *AMQPCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
 	delivery := <-b.consumingChannel
 	delivery.Ack(false)
 	var taskMessage TaskMessage
-	fmt.Println(delivery.Body)
 	if err := json.Unmarshal(delivery.Body, &taskMessage); err != nil {
 		return nil, err
 	}
