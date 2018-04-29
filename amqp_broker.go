@@ -2,7 +2,6 @@ package gocelery
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/streadway/amqp"
 	"time"
 )
@@ -69,7 +68,7 @@ func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
 }
 
 // NewAMQPCeleryBroker creates new AMQPCeleryBroker
-func NewAMQPCeleryBroker(host string, exchange *AMQPExchange, queue *AMQPQueue) *AMQPCeleryBroker {
+func NewAMQPCeleryBroker(host string, exchange *AMQPExchange, queue *AMQPQueue, rate *int) *AMQPCeleryBroker {
 	conn, channel := NewAMQPConnection(host)
 	// ensure exchange is initialized
 	if exchange == nil {
@@ -78,12 +77,15 @@ func NewAMQPCeleryBroker(host string, exchange *AMQPExchange, queue *AMQPQueue) 
 	if queue == nil {
 		queue = NewAMQPQueue(DEFAULT_QUEUE_NAME)
 	}
+	if rate == nil {
+		*rate = 4
+	}
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
 		connection: conn,
 		exchange:   exchange,
 		queue:      queue,
-		rate:       4,
+		rate:       rate,
 	}
 	if err := broker.CreateExchange(); err != nil {
 		panic(err)
@@ -139,7 +141,6 @@ func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 
 // GetTaskMessage retrieves task message from AMQP queue
 func (b *AMQPCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
-	fmt.Println("Im in getTask in the broker")
 	delivery := <-b.consumingChannel
 	delivery.Ack(false)
 	var taskMessage TaskMessage
