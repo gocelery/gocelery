@@ -93,9 +93,9 @@ func NewAMQPCeleryBroker(host string, exchange *AMQPExchange, queue *AMQPQueue) 
 	if err := broker.Qos(broker.rate, 0, false); err != nil {
 		panic(err)
 	}
-	if err := broker.StartConsumingChannel(); err != nil {
-		panic(err)
-	}
+	// if err := broker.StartConsumingChannel(); err != nil {
+	// 	panic(err)
+	// }
 	return broker
 }
 
