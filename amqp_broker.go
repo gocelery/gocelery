@@ -2,6 +2,7 @@ package gocelery
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/streadway/amqp"
 	"time"
 )
@@ -128,7 +129,7 @@ func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	}
 
 	return b.Publish(
-		"",
+		b.exchange.Name,
 		queueName,
 		false,
 		false,
@@ -138,6 +139,7 @@ func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 
 // GetTaskMessage retrieves task message from AMQP queue
 func (b *AMQPCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
+	fmt.Println("Im in getTask in the broker")
 	delivery := <-b.consumingChannel
 	delivery.Ack(false)
 	var taskMessage TaskMessage
