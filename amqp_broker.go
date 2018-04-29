@@ -68,7 +68,7 @@ func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
 }
 
 // NewAMQPCeleryBroker creates new AMQPCeleryBroker
-func NewAMQPCeleryBroker(host string, exchange *AMQPExchange, queue *AMQPQueue, rate *int) *AMQPCeleryBroker {
+func NewAMQPCeleryBroker(host string, exchange *AMQPExchange, queue *AMQPQueue) *AMQPCeleryBroker {
 	conn, channel := NewAMQPConnection(host)
 	// ensure exchange is initialized
 	if exchange == nil {
@@ -77,15 +77,12 @@ func NewAMQPCeleryBroker(host string, exchange *AMQPExchange, queue *AMQPQueue, 
 	if queue == nil {
 		queue = NewAMQPQueue(DEFAULT_QUEUE_NAME)
 	}
-	if rate == nil {
-		*rate = 4
-	}
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
 		connection: conn,
 		exchange:   exchange,
 		queue:      queue,
-		rate:       rate,
+		rate:       4,
 	}
 	if err := broker.CreateExchange(); err != nil {
 		panic(err)
