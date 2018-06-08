@@ -17,21 +17,27 @@ type AMQPCeleryBackend struct {
 }
 
 // NewAMQPCeleryBackend creates new AMQPCeleryBackend
-func NewAMQPCeleryBackend(host string) *AMQPCeleryBackend {
-	conn, channel := NewAMQPConnection(host)
+func NewAMQPCeleryBackend(host string) (*AMQPCeleryBackend, error) {
+	conn, channel, err := NewAMQPConnection(host)
+	if err != nil {
+		return nil, err
+	}
 	// ensure exchange is initialized
 	backend := &AMQPCeleryBackend{
 		Channel:    channel,
 		connection: conn,
 		host:       host,
 	}
-	return backend
+	return backend, nil
 }
 
 // Reconnect reconnects to AMQP server
 func (b *AMQPCeleryBackend) Reconnect() {
 	b.connection.Close()
-	conn, channel := NewAMQPConnection(b.host)
+	conn, channel, err := NewAMQPConnection(b.host)
+	if err != nil {
+		panic(err)
+	}
 	b.Channel = channel
 	b.connection = conn
 }
