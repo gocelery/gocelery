@@ -67,14 +67,19 @@ func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
 
 // NewAMQPCeleryBroker creates new AMQPCeleryBroker
 func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
+	return NewAMQPCeleryBrokerWithOptions(host, "default", "celery", 4, true)
+}
+
+// NewAMQPCeleryBrokerWithOptions creates new AMQPCeleryBroker
+func NewAMQPCeleryBrokerWithOptions(host, exchangeName, queueName string, rate int, consumable bool) *AMQPCeleryBroker {
 	conn, channel := NewAMQPConnection(host)
 	// ensure exchange is initialized
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
 		connection: conn,
-		exchange:   NewAMQPExchange("default"),
-		queue:      NewAMQPQueue("celery"),
-		rate:       4,
+		exchange:   NewAMQPExchange(exchangeName),
+		queue:      NewAMQPQueue(queueName),
+		rate:       rate,
 	}
 	if err := broker.CreateExchange(); err != nil {
 		panic(err)
@@ -85,8 +90,10 @@ func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
 	if err := broker.Qos(broker.rate, 0, false); err != nil {
 		panic(err)
 	}
-	if err := broker.StartConsumingChannel(); err != nil {
-		panic(err)
+	if consumable {
+		if err := broker.StartConsumingChannel(); err != nil {
+			panic(err)
+		}
 	}
 	return broker
 }
