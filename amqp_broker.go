@@ -52,17 +52,17 @@ type AMQPCeleryBroker struct {
 }
 
 // NewAMQPConnection creates new AMQP channel
-func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
+func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel, error) {
 	connection, err := amqp.Dial(host)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 	//defer connection.Close()
 	channel, err := connection.Channel()
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
-	return connection, channel
+	return connection, channel, nil
 }
 
 // NewAMQPCeleryBroker creates new AMQPCeleryBroker
@@ -72,7 +72,12 @@ func NewAMQPCeleryBroker(host string) (*AMQPCeleryBroker, error) {
 
 // NewAMQPCeleryBrokerWithOptions creates new AMQPCeleryBroker
 func NewAMQPCeleryBrokerWithOptions(host, exchangeName, queueName string, rate int, consumable bool) (*AMQPCeleryBroker, error) {
-	conn, channel := NewAMQPConnection(host)
+
+	conn, channel, err := NewAMQPConnection(host)
+	if err != nil {
+		return nil, err
+	}
+
 	// ensure exchange is initialized
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
