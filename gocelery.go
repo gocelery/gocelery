@@ -109,12 +109,14 @@ func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
 		select {
 		case <-timeoutChan:
 			err := fmt.Errorf("%v timeout getting result for %s", timeout, ar.taskID)
+			ticker.Stop()
 			return nil, err
 		case <-ticker.C:
 			val, err := ar.AsyncGet()
 			if err != nil {
 				continue
 			}
+			ticker.Stop()
 			return val, nil
 		}
 	}
