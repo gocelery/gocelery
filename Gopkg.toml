@@ -1,0 +1,16 @@
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/satori/go.uuid"
+
+[[constraint]]
+  name = "github.com/garyburd/redigo"
+  version = "1.6.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/streadway/amqp"
+
+[prune]
+  go-tests = true
+  unused-packages = true
