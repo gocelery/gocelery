@@ -13,8 +13,8 @@ func add(a int, b int) int {
 
 // newCeleryWorker creates celery worker
 func newCeleryWorker(numWorkers int) *CeleryWorker {
-	broker := NewRedisCeleryBroker("localhost:6379", "")
-	backend := NewRedisCeleryBackend("localhost:6379", "")
+	broker := NewRedisCeleryBroker("redis://localhost:6379")
+	backend := NewRedisCeleryBackend("redis://localhost:6379")
 	celeryWorker := NewCeleryWorker(broker, backend, numWorkers)
 	return celeryWorker
 }

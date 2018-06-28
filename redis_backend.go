@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 )
 
 // RedisCeleryBackend is CeleryBackend for Redis
@@ -13,9 +13,9 @@ type RedisCeleryBackend struct {
 }
 
 // NewRedisCeleryBackend creates new RedisCeleryBackend
-func NewRedisCeleryBackend(host, pass string) *RedisCeleryBackend {
+func NewRedisCeleryBackend(uri string) *RedisCeleryBackend {
 	return &RedisCeleryBackend{
-		Pool: NewRedisPool(host, pass),
+		Pool: NewRedisPool(uri),
 	}
 }
 

@@ -54,8 +54,8 @@ func add(a int, b int) int {
 
 func main() {
     // create broker and backend
-	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
-    celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+	celeryBroker := gocelery.NewRedisCeleryBroker("redis://localhost:6379")
+    celeryBackend := gocelery.NewRedisCeleryBackend("redis://localhost:6379")
 
     // use AMQP instead
     // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
@@ -154,8 +154,8 @@ Submit Task from Go Client
 ```go
 func main() {
     // create broker and backend
-	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
-    celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+	celeryBroker := gocelery.NewRedisCeleryBroker("redis://localhost:6379")
+    celeryBackend := gocelery.NewRedisCeleryBackend("redis://localhost:6379")
 
     // use AMQP instead
     // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")

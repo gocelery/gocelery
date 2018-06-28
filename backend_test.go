@@ -10,14 +10,14 @@ import (
 
 func getBackends() []CeleryBackend {
 	return []CeleryBackend{
-		NewRedisCeleryBackend("localhost:6379", ""),
+		NewRedisCeleryBackend("redis://localhost:6379"),
 		NewAMQPCeleryBackend("amqp://"),
 	}
 }
 
 // TestGetResult is Redis specific test to get result from backend
 func TestGetResult(t *testing.T) {
-	backend := NewRedisCeleryBackend("localhost:6379", "")
+	backend := NewRedisCeleryBackend("redis://localhost:6379")
 	taskID := generateUUID()
 
 	// value must be float64 for testing due to json limitation
@@ -46,7 +46,7 @@ func TestGetResult(t *testing.T) {
 
 // TestSetResult is Redis specific test to set result to backend
 func TestSetResult(t *testing.T) {
-	backend := NewRedisCeleryBackend("localhost:6379", "")
+	backend := NewRedisCeleryBackend("redis://localhost:6379")
 	taskID := generateUUID()
 	value := reflect.ValueOf(rand.Float64())
 	resultMessage := getReflectionResultMessage(&value)
