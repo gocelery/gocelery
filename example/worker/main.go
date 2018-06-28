@@ -49,8 +49,8 @@ func (a *AddTask) RunTask() (interface{}, error) {
 
 func main() {
 	// create broker and backend
-	celeryBroker := gocelery.NewRedisCeleryBroker("localhost:6379", "")
-	celeryBackend := gocelery.NewRedisCeleryBackend("localhost:6379", "")
+	celeryBroker := gocelery.NewRedisCeleryBroker("redis://localhost:6379")
+	celeryBackend := gocelery.NewRedisCeleryBackend("redis://localhost:6379")
 
 	// AMQP example
 	//celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
