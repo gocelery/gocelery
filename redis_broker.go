@@ -44,9 +44,16 @@ func NewRedisPool(host, pass string) *redis.Pool {
 
 // NewRedisCeleryBroker creates new RedisCeleryBroker
 func NewRedisCeleryBroker(host, pass string) *RedisCeleryBroker {
+	// See http://docs.celeryproject.org/en/latest/userguide/configuration.html#task-default-queue
+	defaultQueueName := "celery"
+	return NewRedisCeleryBrokerForQueue(host, pass, defaultQueueName)
+}
+
+// NewRedisCeleryBrokerForQueue creates new RedisCeleryBroker with specified queue
+func NewRedisCeleryBrokerForQueue(host, pass, queue string) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
 		Pool:      NewRedisPool(host, pass),
-		queueName: "celery",
+		queueName: queue,
 	}
 }
 

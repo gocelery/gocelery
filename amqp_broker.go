@@ -67,13 +67,20 @@ func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
 
 // NewAMQPCeleryBroker creates new AMQPCeleryBroker
 func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
+	// See http://docs.celeryproject.org/en/latest/userguide/configuration.html#task-default-queue
+	defaultQueueName := "celery"
+	return NewAMQPCeleryBrokerForQueue(host, NewAMQPQueue(defaultQueueName))
+}
+
+// NewAMQPCeleryBrokerForQueue creates new AMQPCeleryBroker
+func NewAMQPCeleryBrokerForQueue(host string, queue *AMQPQueue) *AMQPCeleryBroker {
 	conn, channel := NewAMQPConnection(host)
 	// ensure exchange is initialized
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
 		connection: conn,
 		exchange:   NewAMQPExchange("default"),
-		queue:      NewAMQPQueue("celery"),
+		queue:      queue,
 		rate:       4,
 	}
 	if err := broker.CreateExchange(); err != nil {
