@@ -57,7 +57,7 @@ func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
 	if err != nil {
 		panic(err)
 	}
-	//defer connection.Close()
+
 	channel, err := connection.Channel()
 	if err != nil {
 		panic(err)
@@ -67,7 +67,11 @@ func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
 
 // NewAMQPCeleryBroker creates new AMQPCeleryBroker
 func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
-	conn, channel := NewAMQPConnection(host)
+	return NewAMQPCeleryBrokerByConnAndChannel(NewAMQPConnection(host))
+}
+
+// NewAMQPCeleryBrokerByConnAndChannel creates new AMQPCeleryBroker using AMQP conn and channel
+func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel) *AMQPCeleryBroker {
 	// ensure exchange is initialized
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,

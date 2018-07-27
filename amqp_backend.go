@@ -16,15 +16,20 @@ type AMQPCeleryBackend struct {
 	host       string
 }
 
-// NewAMQPCeleryBackend creates new AMQPCeleryBackend
-func NewAMQPCeleryBackend(host string) *AMQPCeleryBackend {
-	conn, channel := NewAMQPConnection(host)
+// NewAMQPCeleryBackendByConnAndChannel creates new AMQPCeleryBackend by AMQP conn and channel
+func NewAMQPCeleryBackendByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel) *AMQPCeleryBackend {
 	// ensure exchange is initialized
 	backend := &AMQPCeleryBackend{
 		Channel:    channel,
 		connection: conn,
-		host:       host,
 	}
+	return backend
+}
+
+// NewAMQPCeleryBackend creates new AMQPCeleryBackend
+func NewAMQPCeleryBackend(host string) *AMQPCeleryBackend {
+	backend := NewAMQPCeleryBackendByConnAndChannel(NewAMQPConnection(host))
+	backend.host = host
 	return backend
 }
 
