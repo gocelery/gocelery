@@ -19,6 +19,7 @@ You can also use this library as pure go distributed task queue.
 ## Go Celery Worker in Action
 
 ![demo](https://raw.githubusercontent.com/shicky/gocelery/master/demo.gif)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery?ref=badge_shield)
 
 ## Supported Brokers/Backends
 
@@ -216,3 +217,6 @@ Please create Pull Request for any changes.
 ## LICENSE
 
 The gocelery is offered under MIT license.
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery?ref=badge_large)
