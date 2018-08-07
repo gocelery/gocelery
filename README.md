@@ -8,6 +8,7 @@ Go Client/Server for Celery Distributed Task Queue
 [![GoDoc](https://godoc.org/github.com/shicky/gocelery?status.svg)](https://godoc.org/github.com/shicky/gocelery)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/shicky/gocelery/blob/master/LICENSE)
 [![motivation](https://img.shields.io/badge/made%20with-%E2%99%A1-ff69b4.svg)](https://github.com/shicky/gocelery)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery?ref=badge_shield)
 
 ## Why?
 
@@ -19,7 +20,6 @@ You can also use this library as pure go distributed task queue.
 ## Go Celery Worker in Action
 
 ![demo](https://raw.githubusercontent.com/shicky/gocelery/master/demo.gif)
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery?ref=badge_shield)
 
 ## Supported Brokers/Backends
 
