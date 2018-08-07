@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 )
 
 // RedisCeleryBroker is CeleryBroker for Redis
@@ -17,21 +17,15 @@ type RedisCeleryBroker struct {
 	workWG      sync.WaitGroup
 }
 
-// NewRedisPool creates pool of redis connections
-func NewRedisPool(host, pass string) *redis.Pool {
+// NewRedisPool creates pool of redis connections from given uri
+func NewRedisPool(uri string) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     3,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", host)
+			c, err := redis.DialURL(uri)
 			if err != nil {
 				return nil, err
-			}
-			if pass != "" {
-				if _, err = c.Do("AUTH", pass); err != nil {
-					c.Close()
-					return nil, err
-				}
 			}
 			return c, err
 		},
@@ -42,10 +36,10 @@ func NewRedisPool(host, pass string) *redis.Pool {
 	}
 }
 
-// NewRedisCeleryBroker creates new RedisCeleryBroker
-func NewRedisCeleryBroker(host, pass string) *RedisCeleryBroker {
+// NewRedisCeleryBroker creates new RedisCeleryBroker based on given uri
+func NewRedisCeleryBroker(uri string) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
-		Pool:      NewRedisPool(host, pass),
+		Pool:      NewRedisPool(uri),
 		queueName: "celery",
 	}
 }

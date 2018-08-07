@@ -52,8 +52,8 @@ func getAMQPClient() (*CeleryClient, error) {
 }
 
 func getRedisClient() (*CeleryClient, error) {
-	redisBroker := NewRedisCeleryBroker("localhost:6379", "")
-	redisBackend := NewRedisCeleryBackend("localhost:6379", "")
+	redisBroker := NewRedisCeleryBroker("redis://localhost:6379")
+	redisBackend := NewRedisCeleryBackend("redis://localhost:6379")
 	return NewCeleryClient(redisBroker, redisBackend, 1)
 }
 
