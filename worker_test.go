@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+	"errors"
+	"fmt"
 )
 
 // add is test task method
@@ -29,8 +31,8 @@ func newInMemoryCeleryWorker(numWorkers int) *CeleryWorker {
 
 func getWorkers(numWorkers int) []*CeleryWorker {
 	return []*CeleryWorker{
-		//newCeleryWorker(numWorkers),
-		newInMemoryCeleryWorker(numWorkers),
+		newCeleryWorker(numWorkers),
+		//newInMemoryCeleryWorker(numWorkers),
 	}
 }
 
@@ -42,9 +44,12 @@ func registerTask(celeryWorker *CeleryWorker) string {
 	return taskName
 }
 
-func runTestForEachWorker(testFunc func (celeryWorker *CeleryWorker, numWorkers int, t *testing.T), numWorkers int, t *testing.T) {
+func runTestForEachWorker(testFunc func (celeryWorker *CeleryWorker, numWorkers int) error, numWorkers int, t *testing.T) {
 	for _, worker := range getWorkers(numWorkers) {
-		testFunc(worker, numWorkers, t)
+		err := testFunc(worker, numWorkers)
+		if err != nil {
+			t.Error(err)
+		}
 	}
 }
 
@@ -52,19 +57,20 @@ func TestRegisterTask(t *testing.T) {
 	runTestForEachWorker(registerTaskTest, 1, t)
 }
 
-func registerTaskTest(celeryWorker *CeleryWorker, numWorkers int, t *testing.T) {
+func registerTaskTest(celeryWorker *CeleryWorker, numWorkers int) error {
 	taskName := registerTask(celeryWorker)
 	receivedTask := celeryWorker.GetTask(taskName)
 	if receivedTask == nil {
-		t.Errorf("failed to retrieve task")
+		return errors.New("failed to retrieve task")
 	}
+	return  nil
 }
 
 func TestRunTask(t *testing.T) {
 	runTestForEachWorker(runTaskTest, 1, t)
 }
 
-func runTaskTest(celeryWorker *CeleryWorker, numWorkers int, t *testing.T) {
+func runTaskTest(celeryWorker *CeleryWorker, numWorkers int) error {
 	taskName := registerTask(celeryWorker)
 	// prepare args
 	args := []interface{}{
@@ -84,13 +90,14 @@ func runTaskTest(celeryWorker *CeleryWorker, numWorkers int, t *testing.T) {
 	}
 	resultMsg, err := celeryWorker.RunTask(taskMessage)
 	if err != nil {
-		t.Errorf("failed to run celery task %v: %v", taskMessage, err)
+		return errors.New(fmt.Sprintf("failed to run celery task %v: %v", taskMessage, err))
 	}
 	reflectRes := resultMsg.Result.(int64)
 	// check result
 	if int64(res) != reflectRes {
-		t.Errorf("reflect result %v is different from normal result %v", reflectRes, res)
+		return errors.New(fmt.Sprintf("reflect result %v is different from normal result %v", reflectRes, res))
 	}
+	return nil
 }
 
 func TestNumWorkers(t *testing.T) {
@@ -98,11 +105,12 @@ func TestNumWorkers(t *testing.T) {
 	runTestForEachWorker(numWorkersTest, numWorkers, t)
 }
 
-func numWorkersTest(celeryWorker *CeleryWorker, numWorkers int, t *testing.T) {
+func numWorkersTest(celeryWorker *CeleryWorker, numWorkers int) error {
 	celeryNumWorkers := celeryWorker.GetNumWorkers()
 	if numWorkers != celeryNumWorkers {
-		t.Errorf("number of workers are different: %d vs %d", numWorkers, celeryNumWorkers)
+		return errors.New(fmt.Sprintf("number of workers are different: %d vs %d", numWorkers, celeryNumWorkers))
 	}
+	return nil
 }
 
 func TestStartStop(t *testing.T) {
@@ -110,9 +118,10 @@ func TestStartStop(t *testing.T) {
 	runTestForEachWorker(startStopTest, numWorkers, t)
 }
 
-func startStopTest(celeryWorker *CeleryWorker, numWorkers int, t *testing.T) {
+func startStopTest(celeryWorker *CeleryWorker, numWorkers int) error {
 	_ = registerTask(celeryWorker)
 	go celeryWorker.StartWorker()
 	time.Sleep(100 * time.Millisecond)
 	celeryWorker.StopWorker()
+	return nil
 }

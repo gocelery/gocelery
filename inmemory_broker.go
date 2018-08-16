@@ -20,3 +20,8 @@ func (b *InMemoryBroker) GetTaskMessage() (t *TaskMessage, e error) {
 	t, b.taskQueue = b.taskQueue[0], b.taskQueue[1:]
 	return t, nil
 }
+
+func (b *InMemoryBroker) Clear(m *CeleryMessage) error {
+	b.taskQueue = make([]*TaskMessage, 0)
+	return nil
+}
