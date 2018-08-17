@@ -5,7 +5,7 @@ import (
 	"log"
 	"reflect"
 	"sync"
-)
+	)
 
 // CeleryWorker represents distributed task worker
 type CeleryWorker struct {

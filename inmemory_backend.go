@@ -2,7 +2,7 @@ package gocelery
 
 import "errors"
 
-type InMemoryBackend struct{
+type InMemoryBackend struct {
 	ResultStore map[string]*ResultMessage
 }
 

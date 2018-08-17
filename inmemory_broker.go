@@ -1,6 +1,6 @@
 package gocelery
 
-type InMemoryBroker struct{
+type InMemoryBroker struct {
 	taskQueue []*TaskMessage
 }
 

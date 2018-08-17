@@ -1,11 +1,11 @@
 package gocelery
 
 import (
+	"errors"
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
-	"errors"
-	"fmt"
 )
 
 // add is test task method
@@ -32,7 +32,7 @@ func newInMemoryCeleryWorker(numWorkers int) *CeleryWorker {
 func getWorkers(numWorkers int) []*CeleryWorker {
 	return []*CeleryWorker{
 		newCeleryWorker(numWorkers),
-		//newInMemoryCeleryWorker(numWorkers),
+		newInMemoryCeleryWorker(numWorkers),
 	}
 }
 
@@ -44,7 +44,7 @@ func registerTask(celeryWorker *CeleryWorker) string {
 	return taskName
 }
 
-func runTestForEachWorker(testFunc func (celeryWorker *CeleryWorker, numWorkers int) error, numWorkers int, t *testing.T) {
+func runTestForEachWorker(testFunc func(celeryWorker *CeleryWorker, numWorkers int) error, numWorkers int, t *testing.T) {
 	for _, worker := range getWorkers(numWorkers) {
 		err := testFunc(worker, numWorkers)
 		if err != nil {
@@ -63,7 +63,7 @@ func registerTaskTest(celeryWorker *CeleryWorker, numWorkers int) error {
 	if receivedTask == nil {
 		return errors.New("failed to retrieve task")
 	}
-	return  nil
+	return nil
 }
 
 func TestRunTask(t *testing.T) {

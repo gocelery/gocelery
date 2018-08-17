@@ -58,9 +58,9 @@ func getRedisClient() (*CeleryClient, error) {
 }
 
 func getInMemoryClient() (*CeleryClient, error) {
-	redisBroker := NewInMemoryBroker()
-	redisBackend := NewInMemoryBackend()
-	return NewCeleryClient(redisBroker, redisBackend, 1)
+	inMemoryBroker := NewInMemoryBroker()
+	inMemoryBackend := NewInMemoryBackend()
+	return NewCeleryClient(inMemoryBroker, inMemoryBackend, 1)
 }
 
 func getClients() ([]*CeleryClient, error) {
