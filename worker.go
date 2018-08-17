@@ -7,7 +7,8 @@ import (
 	"sync"
 )
 
-// CeleryWorker represents distributed task worker
+// CeleryWorker represents distributed task worker.
+// Not thread safe. Shouldn't be used from within multiple go routines.
 type CeleryWorker struct {
 	broker          CeleryBroker
 	backend         CeleryBackend
