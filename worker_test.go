@@ -84,7 +84,7 @@ func TestStartStop(t *testing.T) {
 	numWorkers := rand.Intn(10)
 	celeryWorker := newCeleryWorker(numWorkers)
 	_ = registerTask(celeryWorker)
-	go celeryWorker.StartWorker()
+	celeryWorker.StartWorker()
 	time.Sleep(100 * time.Millisecond)
 	celeryWorker.StopWorker()
 }
