@@ -64,22 +64,22 @@ func getInMemoryClient() (*CeleryClient, error) {
 }
 
 func getClients() ([]*CeleryClient, error) {
-	//redisClient, err := getRedisClient()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//amqpClient, err := getAMQPClient()
-	//if err != nil {
-	//	return nil, err
-	//}
+	redisClient, err := getRedisClient()
+	if err != nil {
+		return nil, err
+	}
+	amqpClient, err := getAMQPClient()
+	if err != nil {
+		return nil, err
+	}
 	inMemoryClient, err := getInMemoryClient()
 	if err != nil {
 		return nil, err
 	}
 
 	return []*CeleryClient{
-		//redisClient,
-		//amqpClient,
+		redisClient,
+		amqpClient,
 		inMemoryClient,
 	}, nil
 }
