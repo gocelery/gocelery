@@ -120,7 +120,7 @@ func TestStartStop(t *testing.T) {
 
 func startStopTest(celeryWorker *CeleryWorker, numWorkers int) error {
 	_ = registerTask(celeryWorker)
-	go celeryWorker.StartWorker()
+	celeryWorker.StartWorker()
 	time.Sleep(100 * time.Millisecond)
 	celeryWorker.StopWorker()
 	return nil
