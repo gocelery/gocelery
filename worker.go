@@ -32,7 +32,7 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 // StartWorker starts celery worker
 func (w *CeleryWorker) StartWorker() {
 
-	w.stopChannel = make(chan struct{}, 1)
+	w.stopChannel = make(chan struct{})
 	w.workWG.Add(w.numWorkers)
 
 	for i := 0; i < w.numWorkers; i++ {
