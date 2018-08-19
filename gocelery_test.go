@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
-)
+	)
 
 func multiply(a int, b int) int {
 	return a * b
@@ -146,7 +146,7 @@ func TestWorkerClient(t *testing.T) {
 				}
 
 				debugLog(celeryClient, "validating result")
-				actual := int(kwargVal.(int))
+				actual := convertInterface(kwargVal)
 				if actual != expected {
 					t.Errorf("returned result %v is different from expected value %v", actual, expected)
 					return
@@ -160,7 +160,7 @@ func TestWorkerClient(t *testing.T) {
 				}
 
 				debugLog(celeryClient, "validating result")
-				actual = int(argVal.(int64))
+				actual = convertInterface(argVal)
 				if actual != expected {
 					t.Errorf("returned result %v is different from expected value %v", actual, expected)
 					return
@@ -225,3 +225,15 @@ func TestBlockingGet(t *testing.T) {
 	}
 }
 */
+
+func convertInterface(val interface{}) int {
+	f, ok := val.(float64)
+	if ok {
+		return int(f)
+	}
+	i, ok := val.(int64)
+	if ok {
+		return int(i)
+	}
+	return val.(int)
+}
