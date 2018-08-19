@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
-)
+	)
 
 func multiply(a int, b int) int {
 	return a * b
@@ -57,6 +57,12 @@ func getRedisClient() (*CeleryClient, error) {
 	return NewCeleryClient(redisBroker, redisBackend, 1)
 }
 
+func getInMemoryClient() (*CeleryClient, error) {
+	inMemoryBroker := NewInMemoryBroker()
+	inMemoryBackend := NewInMemoryBackend()
+	return NewCeleryClient(inMemoryBroker, inMemoryBackend, 1)
+}
+
 func getClients() ([]*CeleryClient, error) {
 	redisClient, err := getRedisClient()
 	if err != nil {
@@ -66,9 +72,15 @@ func getClients() ([]*CeleryClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	inMemoryClient, err := getInMemoryClient()
+	if err != nil {
+		return nil, err
+	}
+
 	return []*CeleryClient{
 		redisClient,
 		amqpClient,
+		inMemoryClient,
 	}, nil
 }
 
@@ -134,7 +146,7 @@ func TestWorkerClient(t *testing.T) {
 				}
 
 				debugLog(celeryClient, "validating result")
-				actual := int(kwargVal.(float64))
+				actual := convertInterface(kwargVal)
 				if actual != expected {
 					t.Errorf("returned result %v is different from expected value %v", actual, expected)
 					return
@@ -148,7 +160,7 @@ func TestWorkerClient(t *testing.T) {
 				}
 
 				debugLog(celeryClient, "validating result")
-				actual = int(argVal.(float64))
+				actual = convertInterface(argVal)
 				if actual != expected {
 					t.Errorf("returned result %v is different from expected value %v", actual, expected)
 					return
@@ -213,3 +225,15 @@ func TestBlockingGet(t *testing.T) {
 	}
 }
 */
+
+func convertInterface(val interface{}) int {
+	f, ok := val.(float64)
+	if ok {
+		return int(f)
+	}
+	i, ok := val.(int64)
+	if ok {
+		return int(i)
+	}
+	return val.(int)
+}
