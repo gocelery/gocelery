@@ -23,6 +23,7 @@ func getBrokers() []CeleryBroker {
 	return []CeleryBroker{
 		NewRedisCeleryBroker("redis://localhost:6379"),
 		//NewAMQPCeleryBroker("amqp://"),
+		NewInMemoryBroker(),
 	}
 }
 

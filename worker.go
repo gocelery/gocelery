@@ -5,9 +5,10 @@ import (
 	"log"
 	"reflect"
 	"sync"
-)
+	)
 
-// CeleryWorker represents distributed task worker
+// CeleryWorker represents distributed task worker.
+// Not thread safe. Shouldn't be used from within multiple go routines.
 type CeleryWorker struct {
 	broker          CeleryBroker
 	backend         CeleryBackend
@@ -31,7 +32,7 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 // StartWorker starts celery worker
 func (w *CeleryWorker) StartWorker() {
 
-	w.stopChannel = make(chan struct{}, 1)
+	w.stopChannel = make(chan struct{})
 	w.workWG.Add(w.numWorkers)
 
 	for i := 0; i < w.numWorkers; i++ {
