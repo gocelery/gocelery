@@ -64,8 +64,8 @@ func main() {
 	celeryClient.Register("worker.add", add)
 	celeryClient.Register("worker.add_reflect", &AddTask{})
 
-	// Start Worker - blocking method
-	go celeryClient.StartWorker()
+	// Start Worker - non blocking method
+	celeryClient.StartWorker()
 	// Wait 30 seconds and stop all workers
 	time.Sleep(30 * time.Second)
 	celeryClient.StopWorker()

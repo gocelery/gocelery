@@ -12,6 +12,7 @@ func getBackends() []CeleryBackend {
 	return []CeleryBackend{
 		NewRedisCeleryBackend("redis://localhost:6379"),
 		NewAMQPCeleryBackend("amqp://"),
+		NewInMemoryBackend(),
 	}
 }
 
