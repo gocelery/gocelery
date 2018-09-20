@@ -12,7 +12,7 @@ import (
 // CeleryMessage is actual message to be sent to Redis
 type CeleryMessage struct {
 	Body            string                 `json:"body"`
-	Headers         map[string]interface{} `json:"headers"`
+	Headers         map[string]interface{} `json:"headers,omitempty"`
 	ContentType     string                 `json:"content-type"`
 	Properties      CeleryProperties       `json:"properties"`
 	ContentEncoding string                 `json:"content-encoding"`
