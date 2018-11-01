@@ -1,6 +1,6 @@
 package gocelery
 
-import uuid "github.com/satori/go.uuid"
+import "github.com/gofrs/uuid"
 
 // generateUUID generates a v4 uuid and returns it as a string
 func generateUUID() string {
