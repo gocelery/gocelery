@@ -86,12 +86,6 @@ func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Ch
 	if err := broker.CreateQueue(); err != nil {
 		panic(err)
 	}
-	if err := broker.Qos(broker.rate, 0, false); err != nil {
-		panic(err)
-	}
-	if err := broker.StartConsumingChannel(); err != nil {
-		panic(err)
-	}
 	return broker
 }
 
@@ -157,6 +151,15 @@ func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 
 // GetTaskMessage retrieves task message from AMQP queue
 func (b *AMQPCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
+	if b.consumingChannel == nil {
+		if err := b.Qos(b.rate, 0, false); err != nil {
+			panic(err)
+		}
+		if err := b.StartConsumingChannel(); err != nil {
+			panic(err)
+		}
+	}
+
 	delivery := <-b.consumingChannel
 	delivery.Ack(false)
 	var taskMessage TaskMessage
