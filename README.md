@@ -68,8 +68,8 @@ func main() {
 	// worker.add name reflects "add" task method found in "worker.py"
 	celeryClient.Register("worker.add", add)
 
-    // Start Worker - blocking method
-	go celeryClient.StartWorker()
+    // Start Worker
+	celeryClient.StartWorker()
 
     // Wait 30 seconds and stop all workers
 	time.Sleep(30 * time.Second)
