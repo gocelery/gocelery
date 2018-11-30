@@ -46,8 +46,16 @@ func (m *multiplyKwargs) RunTask() (interface{}, error) {
 }
 
 func getAMQPClient() (*CeleryClient, error) {
-	amqpBroker := NewAMQPCeleryBroker("amqp://")
-	amqpBackend := NewAMQPCeleryBackend("amqp://")
+	amqpBroker, err := NewAMQPCeleryBroker("amqp://")
+	if err != nil {
+		return nil, err
+	}
+
+	amqpBackend, err := NewAMQPCeleryBackend("amqp://")
+	if err != nil {
+		return nil, err
+	}
+
 	return NewCeleryClient(amqpBroker, amqpBackend, 4)
 }
 

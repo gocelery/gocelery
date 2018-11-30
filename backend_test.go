@@ -9,10 +9,16 @@ import (
 )
 
 func getBackends() []CeleryBackend {
-	return []CeleryBackend{
-		NewRedisCeleryBackend("redis://localhost:6379"),
-		NewAMQPCeleryBackend("amqp://"),
+	backends := make([]CeleryBackend, 0)
+
+	backends = append(backends, NewRedisCeleryBackend("redis://localhost:6379"))
+
+	celeryBackend, err := NewAMQPCeleryBackend("amqp://")
+	if err == nil {
+		backends = append(backends, celeryBackend)
 	}
+
+	return backends
 }
 
 // TestGetResult is Redis specific test to get result from backend
