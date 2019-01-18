@@ -52,26 +52,31 @@ type AMQPCeleryBroker struct {
 }
 
 // NewAMQPConnection creates new AMQP channel
-func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
+func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel, error) {
 	connection, err := amqp.Dial(host)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 
 	channel, err := connection.Channel()
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
-	return connection, channel
+	return connection, channel, nil
 }
 
 // NewAMQPCeleryBroker creates new AMQPCeleryBroker
-func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
-	return NewAMQPCeleryBrokerByConnAndChannel(NewAMQPConnection(host))
+func NewAMQPCeleryBroker(host string) (*AMQPCeleryBroker, error) {
+	conn, channel, err := NewAMQPConnection(host)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewAMQPCeleryBrokerByConnAndChannel(conn, channel)
 }
 
 // NewAMQPCeleryBrokerByConnAndChannel creates new AMQPCeleryBroker using AMQP conn and channel
-func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel) *AMQPCeleryBroker {
+func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel) (*AMQPCeleryBroker, error) {
 	// ensure exchange is initialized
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
@@ -81,18 +86,18 @@ func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Ch
 		rate:       4,
 	}
 	if err := broker.CreateExchange(); err != nil {
-		panic(err)
+		return nil, err
 	}
 	if err := broker.CreateQueue(); err != nil {
-		panic(err)
+		return nil, err
 	}
 	if err := broker.Qos(broker.rate, 0, false); err != nil {
-		panic(err)
+		return nil, err
 	}
 	if err := broker.StartConsumingChannel(); err != nil {
-		panic(err)
+		return nil, err
 	}
-	return broker
+	return broker, nil
 }
 
 // StartConsumingChannel spawns receiving channel on AMQP queue

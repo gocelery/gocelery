@@ -27,18 +27,31 @@ func NewAMQPCeleryBackendByConnAndChannel(conn *amqp.Connection, channel *amqp.C
 }
 
 // NewAMQPCeleryBackend creates new AMQPCeleryBackend
-func NewAMQPCeleryBackend(host string) *AMQPCeleryBackend {
-	backend := NewAMQPCeleryBackendByConnAndChannel(NewAMQPConnection(host))
+func NewAMQPCeleryBackend(host string) (*AMQPCeleryBackend, error) {
+	conn, channel, err := NewAMQPConnection(host)
+	if err != nil {
+		return nil, err
+	}
+
+	backend := NewAMQPCeleryBackendByConnAndChannel(conn, channel)
 	backend.host = host
-	return backend
+
+	return backend, nil
 }
 
 // Reconnect reconnects to AMQP server
-func (b *AMQPCeleryBackend) Reconnect() {
+func (b *AMQPCeleryBackend) Reconnect() error {
 	b.connection.Close()
-	conn, channel := NewAMQPConnection(b.host)
+
+	conn, channel, err := NewAMQPConnection(b.host)
+	if err != nil {
+		return err
+	}
+
 	b.Channel = channel
 	b.connection = conn
+
+	return nil
 }
 
 // GetResult retrieves result from AMQP queue
