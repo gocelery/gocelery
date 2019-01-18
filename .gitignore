@@ -46,3 +46,4 @@ _testmain.go
 /test/times.out
 
 /vendor
+.vscode

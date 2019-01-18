@@ -1,16 +1,18 @@
 package gocelery
 
+// CeleryBroker is interface for all brokers
 type CeleryBroker interface {
-	Consume() // get task non-blocking
-
-	SendCeleryMessage(*CeleryMessage) error
-	GetTaskMessage() (*TaskMessage, error) // must be non-blocking
+	Set([]byte) error
+	Get() error
 }
 
+// CeleryBackend is interface for all backends
 type CeleryBackend interface {
-	GetResult(string) (*ResultMessage, error) // must be non-blocking
-	SetResult(taskID string, result *ResultMessage) error
+	Set(id string, result []byte) error
+	Get(id string) ([]byte, error) // non-blocking only
 }
+
+// CeleryClient is client for running celery
 type CeleryClient struct {
 	Broker  CeleryBroker
 	Backend CeleryBackend
