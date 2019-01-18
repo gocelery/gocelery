@@ -37,10 +37,10 @@ func NewRedisPool(uri string) *redis.Pool {
 }
 
 // NewRedisCeleryBroker creates new RedisCeleryBroker based on given uri
-func NewRedisCeleryBroker(uri string) *RedisCeleryBroker {
+func NewRedisCeleryBroker(uri string, queue string) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
 		Pool:      NewRedisPool(uri),
-		queueName: "celery",
+		queueName: queue,
 	}
 }
 
