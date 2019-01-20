@@ -1,19 +1,29 @@
 package gocelery
 
-// CeleryBroker is interface for all brokers
-type CeleryBroker interface {
+import (
+	"github.com/gocelery/gocelery/protocol"
+)
+
+// Broker is interface for all brokers
+type Broker interface {
 	Set([]byte) error
-	Get() error
+	Get() ([]byte, error)
 }
 
-// CeleryBackend is interface for all backends
-type CeleryBackend interface {
-	Set(id string, result []byte) error
-	Get(id string) ([]byte, error) // non-blocking only
+// Backend is interface for all backends
+type Backend interface {
+	Set(string, []byte) error
+	Get(string) ([]byte, error) // non-blocking only
 }
 
-// CeleryClient is client for running celery
-type CeleryClient struct {
-	Broker  CeleryBroker
-	Backend CeleryBackend
+// Parser is interface for message parsers
+type Parser interface {
+	Decode([]byte) (*protocol.TaskMessage, error)
+	ContentType() string
+}
+
+// Client is client for running celery
+type Client struct {
+	Broker  Broker
+	Backend Backend
 }

@@ -15,6 +15,22 @@ Go Client/Server for Celery Distributed Task Queue
 go get gopkg.in/gocelery/gocelery.v2
 ```
 
+## v2 Design
+
+* Message Protocol v2 support
+* structs should be initialized by caller instead of using constructor
+* use context.Context
+
+## Try it out!
+
+```
+go run example/v2/args/worker.go
+```
+
+```
+python example/v2/client_args.py
+```
+
 ## Why?
 
 Having being involved in a number of projects migrating server from python to go, I have realized Go can help improve performance of existing python web applications.
