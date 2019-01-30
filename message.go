@@ -64,7 +64,7 @@ func releaseCeleryMessage(v *CeleryMessage) {
 type CeleryProperties struct {
 	BodyEncoding  string             `json:"body_encoding"`
 	CorrelationID string             `json:"correlation_id"`
-	ReplyTo       string             `json:"replay_to"`
+	ReplyTo       string             `json:"reply_to"`
 	DeliveryInfo  CeleryDeliveryInfo `json:"delivery_info"`
 	DeliveryMode  int                `json:"delivery_mode"`
 	DeliveryTag   string             `json:"delivery_tag"`
