@@ -14,24 +14,12 @@ type MessageBody struct {
 }
 
 // Embed has method signatures used for callbacks
-// TODO: check format
 type Embed struct {
 	Callbacks []string `json:"callbacks"`
 	Errbacks  []string `json:"errbacks"`
 	Chain     []string `json:"chain"`
 	Chord     *string  `json:"chord"`
 }
-
-// func ParseEmbed(data interface{}) (*Embed, error) {
-// 	m, ok := data.(map[string]interface{})
-// 	if !ok {
-// 		return nil, fmt.Errorf("failed to parse embed")
-// 	}
-
-// 	return &Embed{
-// 		Callbacks: callbacks,
-// 	}, nil
-// }
 
 // Decode decodes message body
 func Decode(encodedBody string) (*MessageBody, error) {
