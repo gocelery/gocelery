@@ -1,6 +1,7 @@
 package gocelery
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"reflect"
@@ -14,7 +15,7 @@ type CeleryWorker struct {
 	numWorkers      int
 	registeredTasks map[string]interface{}
 	taskLock        sync.RWMutex
-	stopChannel     chan struct{}
+	cancel          context.CancelFunc
 	workWG          sync.WaitGroup
 }
 
@@ -24,14 +25,14 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 		broker:          broker,
 		backend:         backend,
 		numWorkers:      numWorkers,
-		registeredTasks: make(map[string]interface{}),
+		registeredTasks: map[string]interface{}{},
 	}
 }
 
-// StartWorker starts celery worker
-func (w *CeleryWorker) StartWorker() {
-
-	w.stopChannel = make(chan struct{}, 1)
+// StartWorkerWithContext starts celery worker(s) with given parent context
+func (w *CeleryWorker) StartWorkerWithContext(ctx context.Context) {
+	var wctx context.Context
+	wctx, w.cancel = context.WithCancel(ctx)
 	w.workWG.Add(w.numWorkers)
 
 	for i := 0; i < w.numWorkers; i++ {
@@ -39,7 +40,7 @@ func (w *CeleryWorker) StartWorker() {
 			defer w.workWG.Done()
 			for {
 				select {
-				case <-w.stopChannel:
+				case <-wctx.Done():
 					return
 				default:
 
@@ -69,11 +70,14 @@ func (w *CeleryWorker) StartWorker() {
 	}
 }
 
+// StartWorker starts celery worker(s)
+func (w *CeleryWorker) StartWorker() {
+	w.StartWorkerWithContext(context.Background())
+}
+
 // StopWorker stops celery workers
 func (w *CeleryWorker) StopWorker() {
-	for i := 0; i < w.numWorkers; i++ {
-		w.stopChannel <- struct{}{}
-	}
+	w.cancel()
 	w.workWG.Wait()
 }
 
