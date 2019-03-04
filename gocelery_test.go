@@ -2,23 +2,356 @@ package gocelery
 
 import (
 	"fmt"
-	"log"
-	"math/rand"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
+
+	uuid "github.com/satori/go.uuid"
 )
 
-func multiply(a int, b int) int {
-	return a * b
+const TIMEOUT = 2 * time.Second
+
+var (
+	redisBroker  = NewRedisCeleryBroker("redis://localhost:6379")
+	redisBackend = NewRedisCeleryBackend("redis://localhost:6379")
+	amqpBroker   = NewAMQPCeleryBroker("amqp://")
+	amqpBackend  = NewAMQPCeleryBackend("amqp://")
+)
+
+// TestExecutionSuccess covers test cases
+// with successful function execution
+func TestExecutionSuccess(t *testing.T) {
+	testCases := []struct {
+		name     string
+		broker   CeleryBroker
+		backend  CeleryBackend
+		taskName string
+		taskFunc interface{}
+		inA      interface{}
+		inB      interface{}
+		expected interface{}
+	}{
+		{
+			name:     "integer addition with redis broker/backend",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: addInt,
+			inA:      2485,
+			inB:      6468,
+			expected: 8953.0, // json always return float64
+		},
+		{
+			name:     "integer addition with amqp broker/backend",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: addInt,
+			inA:      2485,
+			inB:      6468,
+			expected: 8953.0, // json always return float64
+		},
+		{
+			name:     "string addition with redis broker/backend",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: addStr,
+			inA:      "hello",
+			inB:      "world",
+			expected: "helloworld",
+		},
+		{
+			name:     "string addition with amqp broker/backend",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: addStr,
+			inA:      "hello",
+			inB:      "world",
+			expected: "helloworld",
+		},
+		{
+			name:     "integer and string concatenation with redis broker/backend",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: addStrInt,
+			inA:      "hello",
+			inB:      5,
+			expected: "hello5",
+		},
+		{
+			name:     "integer and string concatenation with amqp broker/backend",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: addStrInt,
+			inA:      "hello",
+			inB:      5,
+			expected: "hello5",
+		},
+		{
+			name:     "float addition with redis broker/backend",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: addFloat,
+			inA:      3.4580,
+			inB:      5.3688,
+			expected: 8.8268,
+		},
+		{
+			name:     "float addition with amqp broker/backend",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: addFloat,
+			inA:      3.4580,
+			inB:      5.3688,
+			expected: 8.8268,
+		},
+		// Bug(sickyoon): float32 as am argument throws a panic
+		// https://github.com/gocelery/gocelery/issues/75
+		// {
+		// 	name:     "float32 addition with redis broker/backend",
+		// 	broker:   redisBroker,
+		// 	backend:  redisBackend,
+		// 	taskName: uuid.Must(uuid.NewV4()).String(),
+		// 	taskFunc: addFloat32,
+		// 	inA:      3.4580,
+		// 	inB:      5.3688,
+		// 	expected: float32(8.8268),
+		// },
+		// {
+		// 	name:     "float32 addition with amqp broker/backend",
+		// 	broker:   amqpBroker,
+		// 	backend:  amqpBackend,
+		// 	taskName: uuid.Must(uuid.NewV4()).String(),
+		// 	taskFunc: addFloat32,
+		// 	inA:      3.4580,
+		// 	inB:      5.3688,
+		// 	expected: float32(8.8268),
+		// },
+		{
+			name:     "boolean and operation with redis broker/backend",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: andBool,
+			inA:      true,
+			inB:      false,
+			expected: false,
+		},
+		{
+			name:     "boolean and operation with amqp broker/backend",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: andBool,
+			inA:      true,
+			inB:      true,
+			expected: true,
+		},
+	}
+	for _, tc := range testCases {
+		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
+		cli.Register(tc.taskName, tc.taskFunc)
+		cli.StartWorker()
+		asyncResult, err := cli.Delay(tc.taskName, tc.inA, tc.inB)
+		if err != nil {
+			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
+			return
+		}
+		res, err := asyncResult.Get(TIMEOUT)
+		if err != nil {
+			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
+		}
+		if !reflect.DeepEqual(tc.expected, res) {
+			t.Errorf("returned result %+v is different from expected result %+v", res, tc.expected)
+			return
+		}
+		cli.StopWorker()
+	}
 }
 
-type multiplyKwargs struct {
+// TestExecutionNamedArguments covers test cases
+// with successful execution of functions with named arguments (kwargs)
+func TestExecutionNamedArgumentsSuccess(t *testing.T) {
+	testCases := []struct {
+		name     string
+		broker   CeleryBroker
+		backend  CeleryBackend
+		taskName string
+		taskFunc interface{}
+		inA      interface{}
+		inB      interface{}
+		expected interface{}
+	}{
+		{
+			name:     "integer addition (named arguments) with redis broker/backend",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &addIntTask{},
+			inA:      2485,
+			inB:      6468,
+			expected: 8953.0, // json always return float64
+		},
+		{
+			name:     "integer addition (named arguments) with amqp broker/backend",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &addIntTask{},
+			inA:      2485,
+			inB:      6468,
+			expected: 8953.0, // json always return float64
+		},
+		{
+			name:     "string addition (named arguments) with redis broker/backend",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &addStrTask{},
+			inA:      "hello",
+			inB:      "world",
+			expected: "helloworld",
+		},
+		{
+			name:     "string addition (named arguments) with amqp broker/backend",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &addStrTask{},
+			inA:      "hello",
+			inB:      "world",
+			expected: "helloworld",
+		},
+		{
+			name:     "integer and string concatenation (named arguments) with redis broker/backend",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &addStrIntTask{},
+			inA:      "hello",
+			inB:      5,
+			expected: "hello5",
+		},
+		{
+			name:     "integer and string concatenation (named arguments) with amqp broker/backend",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &addStrIntTask{},
+			inA:      "hello",
+			inB:      5,
+			expected: "hello5",
+		},
+		{
+			name:     "float addition (named arguments) with redis broker/backend",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &addFloatTask{},
+			inA:      3.4580,
+			inB:      5.3688,
+			expected: 8.8268,
+		},
+		{
+			name:     "float addition (named arguments) with amqp broker/backend",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &addFloatTask{},
+			inA:      3.4580,
+			inB:      5.3688,
+			expected: 8.8268,
+		},
+		// Bug(sickyoon): float32 as am argument throws a panic
+		// https://github.com/gocelery/gocelery/issues/75
+		// {
+		// 	name:     "float32 addition with redis broker/backend",
+		// 	broker:   redisBroker,
+		// 	backend:  redisBackend,
+		// 	taskName: uuid.Must(uuid.NewV4()).String(),
+		// 	taskFunc: &addFloat32Task{},
+		// 	inA:      3.4580,
+		// 	inB:      5.3688,
+		// 	expected: float32(8.8268),
+		// },
+		// {
+		// 	name:     "float32 addition with amqp broker/backend",
+		// 	broker:   amqpBroker,
+		// 	backend:  amqpBackend,
+		// 	taskName: uuid.Must(uuid.NewV4()).String(),
+		// 	taskFunc: &addFloat32Task{},
+		// 	inA:      3.4580,
+		// 	inB:      5.3688,
+		// 	expected: float32(8.8268),
+		// },
+		{
+			name:     "boolean and operation (named arguments) with redis broker/backend",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &andBoolTask{},
+			inA:      true,
+			inB:      false,
+			expected: false,
+		},
+		{
+			name:     "boolean and operation (named arguments) with amqp broker/backend",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &andBoolTask{},
+			inA:      true,
+			inB:      true,
+			expected: true,
+		},
+	}
+	for _, tc := range testCases {
+		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
+		cli.Register(tc.taskName, tc.taskFunc)
+		cli.StartWorker()
+		asyncResult, err := cli.DelayKwargs(
+			tc.taskName,
+			map[string]interface{}{
+				"a": tc.inA,
+				"b": tc.inB,
+			},
+		)
+		if err != nil {
+			t.Errorf("test '%s': failed to submit request for task: %s: %+v", tc.name, tc.taskName, err)
+			return
+		}
+		res, err := asyncResult.Get(TIMEOUT)
+		if err != nil {
+			t.Errorf("failed to get result for task %s: %+v", tc.taskName, err)
+		}
+		if !reflect.DeepEqual(tc.expected, res) {
+			t.Errorf("test '%s': returned result %v is different from expected result %v", tc.name, res, tc.expected)
+			return
+		}
+		cli.StopWorker()
+	}
+}
+
+// addInt returns sum of two integers
+func addInt(a, b int) int {
+	return a + b
+}
+
+// addIntTask returns sum of two integers
+type addIntTask struct {
 	a int
 	b int
 }
 
-func (m *multiplyKwargs) ParseKwargs(kwargs map[string]interface{}) error {
+// ParseKwargs parses named arguments for addIntTask example
+func (a *addIntTask) ParseKwargs(kwargs map[string]interface{}) error {
 	kwargA, ok := kwargs["a"]
 	if !ok {
 		return fmt.Errorf("undefined kwarg a")
@@ -27,7 +360,7 @@ func (m *multiplyKwargs) ParseKwargs(kwargs map[string]interface{}) error {
 	if !ok {
 		return fmt.Errorf("malformed kwarg a")
 	}
-	m.a = int(kwargAFloat)
+	a.a = int(kwargAFloat)
 	kwargB, ok := kwargs["b"]
 	if !ok {
 		return fmt.Errorf("undefined kwarg b")
@@ -36,180 +369,192 @@ func (m *multiplyKwargs) ParseKwargs(kwargs map[string]interface{}) error {
 	if !ok {
 		return fmt.Errorf("malformed kwarg b")
 	}
-	m.b = int(kwargBFloat)
+	a.b = int(kwargBFloat)
 	return nil
 }
 
-func (m *multiplyKwargs) RunTask() (interface{}, error) {
-	result := m.a * m.b
+// RunTask executes addIntTask example
+func (a *addIntTask) RunTask() (interface{}, error) {
+	result := a.a + a.b
 	return result, nil
 }
 
-func getAMQPClient() (*CeleryClient, error) {
-	amqpBroker := NewAMQPCeleryBroker("amqp://")
-	amqpBackend := NewAMQPCeleryBackend("amqp://")
-	return NewCeleryClient(amqpBroker, amqpBackend, 4)
+// addStr concatenates two given strings
+func addStr(a, b string) string {
+	return a + b
 }
 
-func getRedisClient() (*CeleryClient, error) {
-	redisBroker := NewRedisCeleryBroker("redis://localhost:6379")
-	redisBackend := NewRedisCeleryBackend("redis://localhost:6379")
-	return NewCeleryClient(redisBroker, redisBackend, 1)
+// addStrTask concatenates two given strings
+type addStrTask struct {
+	a string
+	b string
 }
 
-func getClients() ([]*CeleryClient, error) {
-	redisClient, err := getRedisClient()
-	if err != nil {
-		return nil, err
+func (a *addStrTask) ParseKwargs(kwargs map[string]interface{}) error {
+	kwargA, ok := kwargs["a"]
+	if !ok {
+		return fmt.Errorf("undefined kwarg a")
 	}
-	amqpClient, err := getAMQPClient()
-	if err != nil {
-		return nil, err
+	a.a, ok = kwargA.(string)
+	if !ok {
+		return fmt.Errorf("malformed kwarg a")
 	}
-	return []*CeleryClient{
-		redisClient,
-		amqpClient,
-	}, nil
+	kwargB, ok := kwargs["b"]
+	if !ok {
+		return fmt.Errorf("undefined kwarg b")
+	}
+	a.b, ok = kwargB.(string)
+	if !ok {
+		return fmt.Errorf("malformed kwarg b")
+	}
+	return nil
 }
 
-func debugLog(client *CeleryClient, format string, args ...interface{}) {
-	pre := fmt.Sprintf("client[%p] - ", client)
-	log.Printf(pre+format, args...)
+func (a *addStrTask) RunTask() (interface{}, error) {
+	return a.a + a.b, nil
 }
 
-func TestWorkerClient(t *testing.T) {
+// addStrInt concatenates string and integer
+func addStrInt(a string, b int) string {
+	return a + strconv.Itoa(b)
+}
 
-	// prepare clients
-	celeryClients, err := getClients()
-	if err != nil {
-		t.Errorf("failed to create clients")
-		return
+// addStrIntTask concatenates string and integer
+type addStrIntTask struct {
+	a string
+	b int
+}
+
+func (a *addStrIntTask) ParseKwargs(kwargs map[string]interface{}) error {
+	kwargA, ok := kwargs["a"]
+	if !ok {
+		return fmt.Errorf("undefined kwarg a")
 	}
-
-	for i := 0; i < 2; i++ {
-
-		kwargTaskName := generateUUID()
-		kwargTask := &multiplyKwargs{}
-
-		argTaskName := generateUUID()
-		argTask := multiply
-
-		for j := 0; j < 2; j++ {
-			for _, celeryClient := range celeryClients {
-
-				debugLog(celeryClient, "registering kwarg task %s %p", kwargTaskName, kwargTask)
-				celeryClient.Register(kwargTaskName, kwargTask)
-
-				debugLog(celeryClient, "registering arg task %s %p", argTaskName, argTask)
-				celeryClient.Register(argTaskName, argTask)
-
-				debugLog(celeryClient, "starting worker")
-				celeryClient.StartWorker()
-
-				arg1 := rand.Intn(100)
-				arg2 := rand.Intn(100)
-				expected := arg1 * arg2
-
-				debugLog(celeryClient, "submitting tasks")
-				kwargAsyncResult, err := celeryClient.DelayKwargs(kwargTaskName, map[string]interface{}{
-					"a": arg1,
-					"b": arg2,
-				})
-				if err != nil {
-					t.Errorf("failed to submit kwarg task %s: %v", kwargTaskName, err)
-					return
-				}
-
-				argAsyncResult, err := celeryClient.Delay(argTaskName, arg1, arg2)
-				if err != nil {
-					t.Errorf("failed to submit arg task %s: %v", argTaskName, err)
-					return
-				}
-
-				debugLog(celeryClient, "waiting for result")
-				kwargVal, err := kwargAsyncResult.Get(10 * time.Second)
-				if err != nil {
-					t.Errorf("failed to get result: %v", err)
-					return
-				}
-
-				debugLog(celeryClient, "validating result")
-				actual := int(kwargVal.(float64))
-				if actual != expected {
-					t.Errorf("returned result %v is different from expected value %v", actual, expected)
-					return
-				}
-
-				debugLog(celeryClient, "waiting for result")
-				argVal, err := argAsyncResult.Get(10 * time.Second)
-				if err != nil {
-					t.Errorf("failed to get result: %v", err)
-					return
-				}
-
-				debugLog(celeryClient, "validating result")
-				actual = int(argVal.(float64))
-				if actual != expected {
-					t.Errorf("returned result %v is different from expected value %v", actual, expected)
-					return
-				}
-
-				debugLog(celeryClient, "stopping worker")
-				celeryClient.StopWorker()
-			}
-		}
+	a.a, ok = kwargA.(string)
+	if !ok {
+		return fmt.Errorf("malformed kwarg a")
 	}
+	kwargB, ok := kwargs["b"]
+	if !ok {
+		return fmt.Errorf("undefined kwarg b")
+	}
+	kwargBFloat, ok := kwargB.(float64)
+	if !ok {
+		return fmt.Errorf("malformed kwarg b")
+	}
+	a.b = int(kwargBFloat)
+	return nil
+}
+
+func (a *addStrIntTask) RunTask() (interface{}, error) {
+	return a.a + strconv.Itoa(a.b), nil
+}
+
+// addFloat returns sum of two float64 values
+func addFloat(a, b float64) float64 {
+	return a + b
+}
+
+// addFloatTask returns sum of two float64 values
+type addFloatTask struct {
+	a float64
+	b float64
+}
+
+func (a *addFloatTask) ParseKwargs(kwargs map[string]interface{}) error {
+	kwargA, ok := kwargs["a"]
+	if !ok {
+		return fmt.Errorf("undefined kwarg a")
+	}
+	a.a, ok = kwargA.(float64)
+	if !ok {
+		return fmt.Errorf("malformed kwarg a")
+	}
+	kwargB, ok := kwargs["b"]
+	if !ok {
+		return fmt.Errorf("undefined kwarg b")
+	}
+	a.b, ok = kwargB.(float64)
+	if !ok {
+		return fmt.Errorf("malformed kwarg b")
+	}
+	return nil
+}
+
+func (a *addFloatTask) RunTask() (interface{}, error) {
+	return a.a + a.b, nil
+}
+
+// Bug(sickyoon): float32 as am argument throws a panic
+// https://github.com/gocelery/gocelery/issues/75
+
+// addFloat32 returns sum of two float32 values
+// func addFloat32(a, b float32) float32 {
+// 	return a + b
+// }
+
+// addFloat32Task returns sum of two float32 values
+// type addFloat32Task struct {
+// 	a float32
+// 	b float32
+// }
+
+// func (a *addFloat32Task) ParseKwargs(kwargs map[string]interface{}) error {
+// 	kwargA, ok := kwargs["a"]
+// 	if !ok {
+// 		return fmt.Errorf("undefined kwarg a")
+// 	}
+// 	a.a, ok = kwargA.(float32)
+// 	if !ok {
+// 		return fmt.Errorf("malformed kwarg a")
+// 	}
+// 	kwargB, ok := kwargs["b"]
+// 	if !ok {
+// 		return fmt.Errorf("undefined kwarg b")
+// 	}
+// 	a.b, ok = kwargB.(float32)
+// 	if !ok {
+// 		return fmt.Errorf("malformed kwarg b")
+// 	}
+// 	return nil
+// }
+
+// func (a *addFloat32Task) RunTask() (interface{}, error) {
+// 	return a.a + a.b, nil
+// }
+
+// andBool returns result of and operation of two given boolean values
+func andBool(a, b bool) bool {
+	return a && b
+}
+
+// andBoolTask returns result of and operation of two given boolean values
+type andBoolTask struct {
+	a bool
+	b bool
+}
+
+func (a *andBoolTask) ParseKwargs(kwargs map[string]interface{}) error {
+	kwargA, ok := kwargs["a"]
+	if !ok {
+		return fmt.Errorf("undefined kwarg a")
+	}
+	a.a, ok = kwargA.(bool)
+	if !ok {
+		return fmt.Errorf("malformed kwarg a")
+	}
+	kwargB, ok := kwargs["b"]
+	if !ok {
+		return fmt.Errorf("undefined kwarg b")
+	}
+	a.b, ok = kwargB.(bool)
+	if !ok {
+		return fmt.Errorf("malformed kwarg b")
+	}
+	return nil
 
 }
 
-func TestRegister(t *testing.T) {
-	celeryClients, err := getClients()
-	if err != nil {
-		t.Errorf("failed to create CeleryClients: %v", err)
-		return
-	}
-	taskName := generateUUID()
-
-	for _, celeryClient := range celeryClients {
-		celeryClient.Register(taskName, multiply)
-		task := celeryClient.worker.GetTask(taskName)
-		if !reflect.DeepEqual(reflect.ValueOf(multiply), reflect.ValueOf(task)) {
-			t.Errorf("registered task %v is different from received task %v", reflect.ValueOf(multiply), reflect.ValueOf(task))
-			return
-		}
-	}
+func (a *andBoolTask) RunTask() (interface{}, error) {
+	return a.a && a.b, nil
 }
-
-/*
-func TestBlockingGet(t *testing.T) {
-	celeryClients, err := getClients()
-	if err != nil {
-		t.Errorf("failed to create CeleryClients: %v", err)
-		return
-	}
-
-	for _, celeryClient := range celeryClients {
-
-		// send task
-		asyncResult, err := celeryClient.Delay("dummy", 3, 5)
-		if err != nil {
-			t.Errorf("failed to get async result")
-			return
-		}
-
-		duration := 1 * time.Second
-		var asyncError error
-
-		go func() {
-			_, asyncError = asyncResult.Get(duration)
-		}()
-
-		time.Sleep(duration + time.Millisecond)
-		if asyncError == nil {
-			t.Errorf("failed to timeout in time")
-			return
-		}
-
-	}
-}
-*/

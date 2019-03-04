@@ -12,7 +12,6 @@ import (
 type AMQPCeleryBackend struct {
 	*amqp.Channel
 	connection *amqp.Connection
-	exchange   *AMQPExchange
 	host       string
 }
 
