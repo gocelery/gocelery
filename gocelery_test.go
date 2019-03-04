@@ -485,40 +485,43 @@ func (a *addFloatTask) RunTask() (interface{}, error) {
 	return a.a + a.b, nil
 }
 
+// Bug(sickyoon): float32 as am argument throws a panic
+// https://github.com/gocelery/gocelery/issues/75
+
 // addFloat32 returns sum of two float32 values
-func addFloat32(a, b float32) float32 {
-	return a + b
-}
+// func addFloat32(a, b float32) float32 {
+// 	return a + b
+// }
 
 // addFloat32Task returns sum of two float32 values
-type addFloat32Task struct {
-	a float32
-	b float32
-}
+// type addFloat32Task struct {
+// 	a float32
+// 	b float32
+// }
 
-func (a *addFloat32Task) ParseKwargs(kwargs map[string]interface{}) error {
-	kwargA, ok := kwargs["a"]
-	if !ok {
-		return fmt.Errorf("undefined kwarg a")
-	}
-	a.a, ok = kwargA.(float32)
-	if !ok {
-		return fmt.Errorf("malformed kwarg a")
-	}
-	kwargB, ok := kwargs["b"]
-	if !ok {
-		return fmt.Errorf("undefined kwarg b")
-	}
-	a.b, ok = kwargB.(float32)
-	if !ok {
-		return fmt.Errorf("malformed kwarg b")
-	}
-	return nil
-}
+// func (a *addFloat32Task) ParseKwargs(kwargs map[string]interface{}) error {
+// 	kwargA, ok := kwargs["a"]
+// 	if !ok {
+// 		return fmt.Errorf("undefined kwarg a")
+// 	}
+// 	a.a, ok = kwargA.(float32)
+// 	if !ok {
+// 		return fmt.Errorf("malformed kwarg a")
+// 	}
+// 	kwargB, ok := kwargs["b"]
+// 	if !ok {
+// 		return fmt.Errorf("undefined kwarg b")
+// 	}
+// 	a.b, ok = kwargB.(float32)
+// 	if !ok {
+// 		return fmt.Errorf("malformed kwarg b")
+// 	}
+// 	return nil
+// }
 
-func (a *addFloat32Task) RunTask() (interface{}, error) {
-	return a.a + a.b, nil
-}
+// func (a *addFloat32Task) RunTask() (interface{}, error) {
+// 	return a.a + a.b, nil
+// }
 
 // andBool returns result of and operation of two given boolean values
 func andBool(a, b bool) bool {

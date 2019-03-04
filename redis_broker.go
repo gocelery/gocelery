@@ -3,7 +3,6 @@ package gocelery
 import (
 	"encoding/json"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -12,9 +11,7 @@ import (
 // RedisCeleryBroker is CeleryBroker for Redis
 type RedisCeleryBroker struct {
 	*redis.Pool
-	queueName   string
-	stopChannel chan bool
-	workWG      sync.WaitGroup
+	queueName string
 }
 
 // NewRedisPool creates pool of redis connections from given uri

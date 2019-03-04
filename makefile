@@ -4,11 +4,11 @@ build:
 
 .PHONY: build-lint
 build-lint:
-	go get -u github.com/alecthomas/gometalinter && gometalinter --install
+	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 .PHONY: lint
 lint: build-lint
-	gometalinter ./...
+	golangci-lint run -D errcheck
 
 .PHONY: test
 test:
