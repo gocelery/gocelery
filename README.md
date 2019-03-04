@@ -2,12 +2,11 @@
 
 Go Client/Server for Celery Distributed Task Queue
 
-[![Build Status](https://travis-ci.org/shicky/gocelery.svg?branch=master)](https://travis-ci.org/shicky/gocelery)
-[![Coverage Status](https://coveralls.io/repos/github/shicky/gocelery/badge.svg?branch=master)](https://coveralls.io/github/shicky/gocelery?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/shicky/gocelery)](https://goreportcard.com/report/github.com/shicky/gocelery)
-[![GoDoc](https://godoc.org/github.com/shicky/gocelery?status.svg)](https://godoc.org/github.com/shicky/gocelery)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/shicky/gocelery/blob/master/LICENSE)
-[![motivation](https://img.shields.io/badge/made%20with-%E2%99%A1-ff69b4.svg)](https://github.com/shicky/gocelery)
+[![Build Status](https://travis-ci.org/gocelery/gocelery.svg?branch=master)](https://travis-ci.org/gocelery/gocelery)
+[![Coverage Status](https://coveralls.io/repos/github/gocelery/gocelery/badge.svg?branch=master)](https://coveralls.io/github/gocelery/gocelery?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gocelery/gocelery)](https://goreportcard.com/report/github.com/gocelery/gocelery)
+[![GoDoc](https://godoc.org/github.com/gocelery/gocelery?status.svg)](https://godoc.org/github.com/gocelery/gocelery)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/gocelery/gocelery/blob/master/LICENSE)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery?ref=badge_shield)
 
 ## Why?
@@ -19,7 +18,7 @@ You can also use this library as pure go distributed task queue.
 
 ## Go Celery Worker in Action
 
-![demo](https://raw.githubusercontent.com/shicky/gocelery/master/demo.gif)
+![demo](https://raw.githubusercontent.com/gocelery/gocelery/master/demo.gif)
 
 ## Supported Brokers/Backends
 
@@ -217,6 +216,3 @@ Please create Pull Request for any changes.
 ## LICENSE
 
 The gocelery is offered under MIT license.
-
-
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgocelery%2Fgocelery?ref=badge_large)
