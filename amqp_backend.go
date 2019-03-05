@@ -72,13 +72,6 @@ func (b *AMQPCeleryBackend) GetResult(taskID string) (*ResultMessage, error) {
 		return nil, err
 	}
 
-	// Hack to avoid Exception (503) Reason: "unexpected command received"
-	// https://github.com/streadway/amqp/issues/170
-	// AMQP does not allow concurrent use of channels!
-	// Fixed by implementing periodic polling
-	// https://github.com/shicky/gocelery/issues/18
-	// time.Sleep(50 * time.Millisecond)
-
 	// open channel temporarily
 	channel, err := b.Consume(queueName, "", false, false, false, false, nil)
 	if err != nil {
@@ -88,7 +81,7 @@ func (b *AMQPCeleryBackend) GetResult(taskID string) (*ResultMessage, error) {
 	var resultMessage ResultMessage
 
 	delivery := <-channel
-	delivery.Ack(false)
+	deliveryAck(delivery)
 	if err := json.Unmarshal(delivery.Body, &resultMessage); err != nil {
 		return nil, err
 	}

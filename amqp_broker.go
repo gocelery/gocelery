@@ -159,7 +159,7 @@ func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 func (b *AMQPCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
 	select {
 	case delivery := <-b.consumingChannel:
-		delivery.Ack(false)
+		deliveryAck(delivery)
 		var taskMessage TaskMessage
 		if err := json.Unmarshal(delivery.Body, &taskMessage); err != nil {
 			return nil, err
