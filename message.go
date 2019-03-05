@@ -138,7 +138,7 @@ func getTaskMessage(task string) *TaskMessage {
 	msg.Task = task
 	msg.Args = make([]interface{}, 0)
 	msg.Kwargs = make(map[string]interface{})
-	msg.ETA = time.Now().Format(time.RFC3339)
+	msg.ETA = ""
 	return msg
 }
 

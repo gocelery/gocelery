@@ -74,7 +74,9 @@ func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 	}
 	// parse
 	var message CeleryMessage
-	json.Unmarshal(messageList[1].([]byte), &message)
+	if err := json.Unmarshal(messageList[1].([]byte), &message); err != nil {
+		return nil, err
+	}
 	return &message, nil
 }
 

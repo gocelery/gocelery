@@ -8,7 +8,7 @@ build-lint:
 
 .PHONY: lint
 lint: build-lint
-	golangci-lint run -D errcheck
+	golangci-lint run
 
 .PHONY: test
 test:
