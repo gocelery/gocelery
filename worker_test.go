@@ -1,6 +1,7 @@
 package gocelery
 
 import (
+	"context"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -148,9 +149,26 @@ func TestWorkerStartStop(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		celeryWorker := NewCeleryWorker(tc.broker, tc.backend, 100)
+		celeryWorker := NewCeleryWorker(tc.broker, tc.backend, 1000)
 		go celeryWorker.StartWorker()
 		time.Sleep(100 * time.Millisecond)
-		celeryWorker.StopWorker()
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		go func() {
+			celeryWorker.StopWorker()
+			cancel()
+		}()
+		func() {
+			for {
+				select {
+				case <-ctx.Done():
+					if ctx.Err() != context.Canceled {
+						t.Errorf("test '%s': failed to stop celery workers in time: %+v", tc.name, ctx.Err())
+					}
+					return
+				default:
+					time.Sleep(100 * time.Millisecond)
+				}
+			}
+		}()
 	}
 }
