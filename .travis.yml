@@ -13,6 +13,6 @@ before_install:
 install:
   - dep ensure
 script:
-  - golangci-lint run -D errcheck
+  - golangci-lint run
   - go test -v -cover ./...
   - goveralls -service=travis-ci

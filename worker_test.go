@@ -2,6 +2,7 @@ package gocelery
 
 import (
 	"math/rand"
+	"reflect"
 	"testing"
 	"time"
 
@@ -13,80 +14,143 @@ func add(a int, b int) int {
 	return a + b
 }
 
-// newCeleryWorker creates celery worker
-func newCeleryWorker(numWorkers int) *CeleryWorker {
-	broker := NewRedisCeleryBroker("redis://localhost:6379")
-	backend := NewRedisCeleryBackend("redis://localhost:6379")
-	celeryWorker := NewCeleryWorker(broker, backend, numWorkers)
-	return celeryWorker
-}
-
-// registerTask registers add test task
-func registerTask(celeryWorker *CeleryWorker) string {
-	taskName := "add"
-	registeredTask := add
-	celeryWorker.Register(taskName, registeredTask)
-	return taskName
-}
-
-func TestRegisterTask(t *testing.T) {
-	celeryWorker := newCeleryWorker(1)
-	taskName := registerTask(celeryWorker)
-	receivedTask := celeryWorker.GetTask(taskName)
-	if receivedTask == nil {
-		t.Errorf("failed to retrieve task")
+// TestWorkerRegisterTask tests whether a task can be registered and retrieved correctly
+func TestWorkerRegisterTask(t *testing.T) {
+	testCases := []struct {
+		name           string
+		broker         CeleryBroker
+		backend        CeleryBackend
+		registeredTask interface{}
+	}{
+		{
+			name:           "register task with redis broker/backend",
+			broker:         redisBroker,
+			backend:        redisBackend,
+			registeredTask: add,
+		},
+		{
+			name:           "register task with amqp broker/backend",
+			broker:         amqpBroker,
+			backend:        amqpBackend,
+			registeredTask: add,
+		},
+	}
+	for _, tc := range testCases {
+		celeryWorker := NewCeleryWorker(tc.broker, tc.backend, 1)
+		taskName := uuid.Must(uuid.NewV4()).String()
+		celeryWorker.Register(taskName, tc.registeredTask)
+		receivedTask := celeryWorker.GetTask(taskName)
+		if !reflect.DeepEqual(
+			reflect.ValueOf(receivedTask),
+			reflect.ValueOf(tc.registeredTask),
+		) {
+			t.Errorf("test '%s': expected registered task %+v but received %+v", tc.name, tc.registeredTask, receivedTask)
+		}
 	}
 }
 
-func TestRunTask(t *testing.T) {
-	celeryWorker := newCeleryWorker(1)
-	taskName := registerTask(celeryWorker)
-
-	// prepare args
-	args := []interface{}{
-		rand.Int(),
-		rand.Int(),
+// TestWorkerRunTask tests successful function execution
+func TestWorkerRunTask(t *testing.T) {
+	testCases := []struct {
+		name           string
+		broker         CeleryBroker
+		backend        CeleryBackend
+		registeredTask interface{}
+	}{
+		{
+			name:           "run task with redis broker/backend",
+			broker:         redisBroker,
+			backend:        redisBackend,
+			registeredTask: add,
+		},
+		{
+			name:           "run task with amqp broker/backend",
+			broker:         amqpBroker,
+			backend:        amqpBackend,
+			registeredTask: add,
+		},
 	}
-
-	// Run task normally
-	res := add(args[0].(int), args[1].(int))
-
-	// construct task message
-	taskMessage := &TaskMessage{
-		ID:      uuid.Must(uuid.NewV4()).String(),
-		Task:    taskName,
-		Args:    args,
-		Kwargs:  nil,
-		Retries: 1,
-		ETA:     "",
-	}
-	resultMsg, err := celeryWorker.RunTask(taskMessage)
-	if err != nil {
-		t.Errorf("failed to run celery task %v: %v", taskMessage, err)
-	}
-
-	reflectRes := resultMsg.Result.(int64)
-
-	// check result
-	if int64(res) != reflectRes {
-		t.Errorf("reflect result %v is different from normal result %v", reflectRes, res)
+	for _, tc := range testCases {
+		celeryWorker := NewCeleryWorker(tc.broker, tc.backend, 1)
+		taskName := uuid.Must(uuid.NewV4()).String()
+		celeryWorker.Register(taskName, tc.registeredTask)
+		args := []interface{}{
+			rand.Int(),
+			rand.Int(),
+		}
+		res := add(args[0].(int), args[1].(int))
+		taskMessage := &TaskMessage{
+			ID:      uuid.Must(uuid.NewV4()).String(),
+			Task:    taskName,
+			Args:    args,
+			Kwargs:  nil,
+			Retries: 1,
+			ETA:     "",
+		}
+		resultMsg, err := celeryWorker.RunTask(taskMessage)
+		if err != nil {
+			t.Errorf("test '%s': failed to run celery task %v: %v", tc.name, taskMessage, err)
+			continue
+		}
+		reflectRes := resultMsg.Result.(int64)
+		if int64(res) != reflectRes {
+			t.Errorf("test '%s': reflect result %v is different from normal result %v", tc.name, reflectRes, res)
+		}
 	}
 }
 
-func TestNumWorkers(t *testing.T) {
-	numWorkers := rand.Intn(10)
-	celeryWorker := newCeleryWorker(numWorkers)
-	celeryNumWorkers := celeryWorker.GetNumWorkers()
-	if numWorkers != celeryNumWorkers {
-		t.Errorf("number of workers are different: %d vs %d", numWorkers, celeryNumWorkers)
+// TestWorkerNumWorkers ensures correct number of workers is set
+func TestWorkerNumWorkers(t *testing.T) {
+	testCases := []struct {
+		name    string
+		broker  CeleryBroker
+		backend CeleryBackend
+	}{
+		{
+			name:    "ensure correct number of workers with redis broker/backend",
+			broker:  redisBroker,
+			backend: redisBackend,
+		},
+		{
+			name:    "ensure correct number of workers with amqp broker/backend",
+			broker:  amqpBroker,
+			backend: amqpBackend,
+		},
+	}
+	for _, tc := range testCases {
+		numWorkers := rand.Intn(10)
+		celeryWorker := NewCeleryWorker(tc.broker, tc.backend, numWorkers)
+		celeryNumWorkers := celeryWorker.GetNumWorkers()
+		if numWorkers != celeryNumWorkers {
+			t.Errorf("test '%s': number of workers are different: %d vs %d", tc.name, numWorkers, celeryNumWorkers)
+		}
 	}
 }
 
-func TestStartStop(t *testing.T) {
-	numWorkers := rand.Intn(10)
-	celeryWorker := newCeleryWorker(numWorkers)
-	_ = registerTask(celeryWorker)
-	go celeryWorker.StartWorker()
-	time.Sleep(100 * time.Millisecond)
-	celeryWorker.StopWorker()
+// TestWorkerStartStop tests starting and stopping workers
+// and gracefully wait for all workers to terminate
+// ensure test timeout is set to avoid hanging
+func TestWorkerStartStop(t *testing.T) {
+	testCases := []struct {
+		name    string
+		broker  CeleryBroker
+		backend CeleryBackend
+	}{
+		{
+			name:    "start and gracefully stop workers with redis broker/backend",
+			broker:  redisBroker,
+			backend: redisBackend,
+		},
+		{
+			name:    "start and gracefully stop workers with amqp broker/backend",
+			broker:  amqpBroker,
+			backend: amqpBackend,
+		},
+	}
+	for _, tc := range testCases {
+		celeryWorker := NewCeleryWorker(tc.broker, tc.backend, 100)
+		go celeryWorker.StartWorker()
+		time.Sleep(100 * time.Millisecond)
+		celeryWorker.StopWorker()
+	}
 }
