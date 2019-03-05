@@ -1,6 +1,7 @@
 package gocelery
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -41,6 +42,11 @@ func (cc *CeleryClient) Register(name string, task interface{}) {
 // StartWorker starts celery workers
 func (cc *CeleryClient) StartWorker() {
 	cc.worker.StartWorker()
+}
+
+// StartWorkerWithContext starts celery workers with given parent context
+func (cc *CeleryClient) StartWorkerWithContext(ctx context.Context) {
+	cc.worker.StartWorkerWithContext(ctx)
 }
 
 // StopWorker stops celery workers
