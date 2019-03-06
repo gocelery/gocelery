@@ -116,7 +116,7 @@ type TaskMessage struct {
 	Args    []interface{}          `json:"args"`
 	Kwargs  map[string]interface{} `json:"kwargs"`
 	Retries int                    `json:"retries"`
-	ETA     string                 `json:"eta"`
+	ETA     *string                `json:"eta"`
 }
 
 func (tm *TaskMessage) reset() {
@@ -128,11 +128,12 @@ func (tm *TaskMessage) reset() {
 
 var taskMessagePool = sync.Pool{
 	New: func() interface{} {
+		eta := time.Now().Format(time.RFC3339)
 		return &TaskMessage{
 			ID:      uuid.Must(uuid.NewV4()).String(),
 			Retries: 0,
 			Kwargs:  nil,
-			ETA:     time.Now().Format(time.RFC3339),
+			ETA:     &eta,
 		}
 	},
 }
@@ -142,7 +143,7 @@ func getTaskMessage(task string) *TaskMessage {
 	msg.Task = task
 	msg.Args = make([]interface{}, 0)
 	msg.Kwargs = make(map[string]interface{})
-	msg.ETA = ""
+	msg.ETA = nil
 	return msg
 }
 

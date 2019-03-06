@@ -6,8 +6,8 @@ from celery import Celery
 
 app = Celery(
     'tasks',
-    broker='redis://localhost:6379',
-    backend='redis://localhost:6379',
+    broker='redis://',
+    backend='redis://',
 )
 
 app.conf.update(
@@ -15,14 +15,15 @@ app.conf.update(
     CELERY_ACCEPT_CONTENT=['json'],  # Ignore other content
     CELERY_RESULT_SERIALIZER='json',
     CELERY_ENABLE_UTC=True,
+    CELERY_TASK_PROTOCOL=1,
 )
 
 
 @app.task
-def add(x, y):
-    return x + y
+def add(a, b):
+    return a + b
 
 
 @app.task
-def add_reflect(x, y):
-    return x + y
+def add_reflect(a, b):
+    return a + b
