@@ -81,6 +81,11 @@ func (w *CeleryWorker) StopWorker() {
 	w.workWG.Wait()
 }
 
+// StopWait waits for celery workers to terminate
+func (w *CeleryWorker) StopWait() {
+	w.workWG.Wait()
+}
+
 // GetNumWorkers returns number of currently running workers
 func (w *CeleryWorker) GetNumWorkers() int {
 	return w.numWorkers

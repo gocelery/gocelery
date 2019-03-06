@@ -86,19 +86,6 @@ func (b *AMQPCeleryBackend) GetResult(taskID string) (*ResultMessage, error) {
 		return nil, err
 	}
 	return &resultMessage, nil
-
-	/*
-		select {
-		case delivery := <-channel:
-			delivery.Ack(false)
-			if err := json.Unmarshal(delivery.Body, &resultMessage); err != nil {
-				return nil, err
-			}
-			return &resultMessage, nil
-		default:
-			return nil, fmt.Errorf("failed to read from channel")
-		}
-	*/
 }
 
 // SetResult sets result back to AMQP queue
