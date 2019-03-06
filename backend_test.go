@@ -1,3 +1,7 @@
+// Copyright (c) 2019 Sick Yoon
+// This file is part of gocelery which is released under MIT license.
+// See file LICENSE for full license details.
+
 package gocelery
 
 import (

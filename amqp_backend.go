@@ -1,3 +1,7 @@
+// Copyright (c) 2019 Sick Yoon
+// This file is part of gocelery which is released under MIT license.
+// See file LICENSE for full license details.
+
 package gocelery
 
 import (
@@ -15,9 +19,8 @@ type AMQPCeleryBackend struct {
 	host       string
 }
 
-// NewAMQPCeleryBackendByConnAndChannel creates new AMQPCeleryBackend by AMQP conn and channel
+// NewAMQPCeleryBackendByConnAndChannel creates new AMQPCeleryBackend by AMQP connection and channel
 func NewAMQPCeleryBackendByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel) *AMQPCeleryBackend {
-	// ensure exchange is initialized
 	backend := &AMQPCeleryBackend{
 		Channel:    channel,
 		connection: conn,

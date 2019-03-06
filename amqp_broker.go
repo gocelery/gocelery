@@ -1,3 +1,7 @@
+// Copyright (c) 2019 Sick Yoon
+// This file is part of gocelery which is released under MIT license.
+// See file LICENSE for full license details.
+
 package gocelery
 
 import (
@@ -73,7 +77,6 @@ func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
 
 // NewAMQPCeleryBrokerByConnAndChannel creates new AMQPCeleryBroker using AMQP conn and channel
 func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel) *AMQPCeleryBroker {
-	// ensure exchange is initialized
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
 		connection: conn,

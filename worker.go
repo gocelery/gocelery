@@ -1,3 +1,7 @@
+// Copyright (c) 2019 Sick Yoon
+// This file is part of gocelery which is released under MIT license.
+// See file LICENSE for full license details.
+
 package gocelery
 
 import (
@@ -44,7 +48,7 @@ func (w *CeleryWorker) StartWorkerWithContext(ctx context.Context) {
 					return
 				default:
 
-					// process messages
+					// process task request
 					taskMessage, err := w.broker.GetTaskMessage()
 					if err != nil || taskMessage == nil {
 						continue
@@ -70,7 +74,7 @@ func (w *CeleryWorker) StartWorkerWithContext(ctx context.Context) {
 	}
 }
 
-// StartWorker starts celery worker(s)
+// StartWorker starts celery workers
 func (w *CeleryWorker) StartWorker() {
 	w.StartWorkerWithContext(context.Background())
 }
@@ -145,6 +149,7 @@ func runTaskFunc(taskFunc *reflect.Value, message *TaskMessage) (*ResultMessage,
 	if numArgs != messageNumArgs {
 		return nil, fmt.Errorf("Number of task arguments %d does not match number of message arguments %d", numArgs, messageNumArgs)
 	}
+
 	// construct arguments
 	in := make([]reflect.Value, messageNumArgs)
 	for i, arg := range message.Args {
@@ -164,5 +169,6 @@ func runTaskFunc(taskFunc *reflect.Value, message *TaskMessage) (*ResultMessage,
 	if len(res) == 0 {
 		return nil, nil
 	}
+
 	return getReflectionResultMessage(&res[0]), nil
 }

@@ -40,70 +40,46 @@ CELERY_RESULT_SERIALIZER='json',
 CELERY_ENABLE_UTC=True,
 ```
 
-## Celery Worker Example
+## Example
+
+[GoCelery GoDoc](https://godoc.org/github.com/gocelery/gocelery) has good examples.<br/>
+Also take a look at `example` directory for sample python code.
+
+### GoCelery Worker Example
 
 Run Celery Worker implemented in Go
 
 ```go
-// example/worker/main.go
+// initialize celery client
+cli, _ := NewCeleryClient(
+	NewRedisCeleryBroker("redis://"),
+	NewRedisCeleryBackend("redis://"),
+	5, // number of workers
+)
 
-// Celery Task
-func add(a int, b int) int {
+// task
+add := func(a, b int) int {
 	return a + b
 }
 
-func main() {
-    // create broker and backend
-	celeryBroker := gocelery.NewRedisCeleryBroker("redis://localhost:6379")
-    celeryBackend := gocelery.NewRedisCeleryBackend("redis://localhost:6379")
+// register task
+cli.Register("worker.add", add)
 
-    // use AMQP instead
-    // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
-    // celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
+// start workers (non-blocking call)
+cli.StartWorker()
 
-	// Configure with 2 celery workers
-	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 2)
+// wait for client request
+time.Sleep(10 * time.Second)
 
-	// worker.add name reflects "add" task method found in "worker.py"
-	celeryClient.Register("worker.add", add)
-
-    // Start Worker - blocking method
-	go celeryClient.StartWorker()
-
-    // Wait 30 seconds and stop all workers
-	time.Sleep(30 * time.Second)
-	celeryClient.StopWorker()
-}
-```
-```bash
-go run example/worker/main.go
+// stop workers gracefully (blocking call)
+cli.StopWorker()
 ```
 
-You can use custom struct instead to hold shared structures.
-
-```go
-
-type MyStruct struct {
-	MyInt int
-}
-
-func (so *MyStruct) add(a int, b int) int {
-	return a + b + so.MyInt
-}
-
-// code omitted ...
-
-ms := &MyStruct{10}
-celeryClient.Register("worker.add", ms.add)
-
-// code omitted ...
-```
-
+### Python Client Example
 
 Submit Task from Python Client
-```python
-# example/test.py
 
+```python
 from celery import Celery
 
 app = Celery('tasks',
@@ -116,22 +92,15 @@ def add(x, y):
     return x + y
 
 if __name__ == '__main__':
-    # submit celery task to be executed in Go workers
     ar = add.apply_async((5456, 2878), serializer='json')
     print(ar.get())
 ```
 
-```bash
-python example/test.py
-```
-
-## Celery Client Example
+### Python Worker Example
 
 Run Celery Worker implemented in Python
 
 ```python
-# example/worker.py
-
 from celery import Celery
 
 app = Celery('tasks',
@@ -145,50 +114,46 @@ def add(x, y):
 ```
 
 ```bash
-cd example
 celery -A worker worker --loglevel=debug --without-heartbeat --without-mingle
 ```
+
+### GoCelery Client Example
 
 Submit Task from Go Client
 
 ```go
 func main() {
-    // create broker and backend
-	celeryBroker := gocelery.NewRedisCeleryBroker("redis://localhost:6379")
-    celeryBackend := gocelery.NewRedisCeleryBackend("redis://localhost:6379")
+    // initialize celery client
+	cli, _ := NewCeleryClient(
+		NewRedisCeleryBroker("redis://"),
+		NewRedisCeleryBackend("redis://"),
+		1,
+	)
 
-    // use AMQP instead
-    // celeryBroker := gocelery.NewAMQPCeleryBroker("amqp://")
-    // celeryBackend := gocelery.NewAMQPCeleryBackend("amqp://")
+	// prepare arguments
+	taskName := "worker.add"
+	argA := rand.Intn(10)
+	argB := rand.Intn(10)
 
-    // create client
-	celeryClient, _ := gocelery.NewCeleryClient(celeryBroker, celeryBackend, 0)
-
-    // send task
-	asyncResult, err := celeryClient.Delay("worker.add", 3, 5)
+	// run task
+	asyncResult, err := cli.Delay(taskName, argA, argB)
 	if err != nil {
 		panic(err)
 	}
 
-    // check if result is ready
-	isReady, _ := asyncResult.Ready()
-	fmt.Printf("ready status %v\n", isReady)
-
-    // get result with 5s timeout
-	res, err = asyncResult.Get(5 * time.Second)
+	// get results from backend with timeout
+	res, err := asyncResult.Get(10 * time.Second)
 	if err != nil {
-		fmt.Println(err)
-	} else {
-        fmt.Println(res)
-    }
+		panic(err)
+	}
+
+	log.Printf("result: %+v of type %+v", res, reflect.TypeOf(res))
 }
 ```
 
-```bash
-go run example/client/main.go
-```
-
 ## Sample Celery Task Message
+
+Celery Message Protocol Version 1
 
 ```javascript
 {
@@ -207,6 +172,10 @@ go run example/client/main.go
     "kwargs": {}
 }
 ```
+
+## Projects
+
+Please let us know if you use gocelery in your project!
 
 ## Contributing
 

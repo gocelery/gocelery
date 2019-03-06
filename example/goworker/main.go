@@ -2,11 +2,13 @@
 // This file is part of gocelery which is released under MIT license.
 // See file LICENSE for full license details.
 
-package gocelery
+package main
 
 import (
 	"fmt"
 	"time"
+
+	"github.com/gocelery/gocelery"
 )
 
 // exampleAddTask is integer addition task
@@ -43,17 +45,17 @@ func (a *exampleAddTask) RunTask() (interface{}, error) {
 	return result, nil
 }
 
-func Example_workerWithNamedArguments() {
+func main() {
 
 	// initialize celery client
-	cli, _ := NewCeleryClient(
-		NewRedisCeleryBroker("redis://"),
-		NewRedisCeleryBackend("redis://"),
+	cli, _ := gocelery.NewCeleryClient(
+		gocelery.NewRedisCeleryBroker("redis://"),
+		gocelery.NewRedisCeleryBackend("redis://"),
 		5, // number of workers
 	)
 
 	// register task
-	cli.Register("add", &exampleAddTask{})
+	cli.Register("worker.add_reflect", &exampleAddTask{})
 
 	// start workers (non-blocking call)
 	cli.StartWorker()

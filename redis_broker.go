@@ -1,3 +1,7 @@
+// Copyright (c) 2019 Sick Yoon
+// This file is part of gocelery which is released under MIT license.
+// See file LICENSE for full license details.
+
 package gocelery
 
 import (
@@ -8,13 +12,13 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
-// RedisCeleryBroker is CeleryBroker for Redis
+// RedisCeleryBroker is celery broker for redis
 type RedisCeleryBroker struct {
 	*redis.Pool
 	queueName string
 }
 
-// NewRedisPool creates pool of redis connections from given uri
+// NewRedisPool creates pool of redis connections from given connection string
 func NewRedisPool(uri string) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     3,
@@ -68,11 +72,9 @@ func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 		return nil, fmt.Errorf("null message received from redis")
 	}
 	messageList := messageJSON.([]interface{})
-	// check for celery message
 	if string(messageList[0].([]byte)) != "celery" {
 		return nil, fmt.Errorf("not a celery message: %v", messageList[0])
 	}
-	// parse
 	var message CeleryMessage
 	if err := json.Unmarshal(messageList[1].([]byte), &message); err != nil {
 		return nil, err
