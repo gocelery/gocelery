@@ -90,7 +90,7 @@ func TestWorkerRunTask(t *testing.T) {
 			Args:    args,
 			Kwargs:  nil,
 			Retries: 1,
-			ETA:     "",
+			ETA:     nil,
 		}
 		resultMsg, err := celeryWorker.RunTask(taskMessage)
 		if err != nil {
