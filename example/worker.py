@@ -1,13 +1,14 @@
+# Copyright (c) 2019 Sick Yoon
+# This file is part of gocelery which is released under MIT license.
+# See file LICENSE for full license details.
+
 from celery import Celery
 
-
-app = Celery('tasks',
+app = Celery(
+    'tasks',
     broker='redis://localhost:6379',
-    backend='redis://localhost:6379'
+    backend='redis://localhost:6379',
 )
-
-# using AMQP instead
-# app = Celery('tasks', backend='amqp://', broker='amqp://')
 
 app.conf.update(
     CELERY_TASK_SERIALIZER='json',
@@ -16,9 +17,11 @@ app.conf.update(
     CELERY_ENABLE_UTC=True,
 )
 
+
 @app.task
 def add(x, y):
     return x + y
+
 
 @app.task
 def add_reflect(x, y):

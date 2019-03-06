@@ -1,3 +1,7 @@
+// Copyright (c) 2019 Sick Yoon
+// This file is part of gocelery which is released under MIT license.
+// See file LICENSE for full license details.
+
 package gocelery
 
 import (
@@ -100,11 +104,11 @@ type CeleryTask interface {
 	// ParseKwargs - define a method to parse kwargs
 	ParseKwargs(map[string]interface{}) error
 
-	// RunTask - define a method to run
+	// RunTask - define a method for execution
 	RunTask() (interface{}, error)
 }
 
-// AsyncResult is pending result
+// AsyncResult represents pending result
 type AsyncResult struct {
 	taskID  string
 	backend CeleryBackend
@@ -112,7 +116,7 @@ type AsyncResult struct {
 }
 
 // Get gets actual result from backend
-// It blocks for period of time set by timeout and return error if unavailable
+// It blocks for period of time set by timeout and returns error if unavailable
 func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
 	ticker := time.NewTicker(50 * time.Millisecond)
 	timeoutChan := time.After(timeout)
@@ -131,12 +135,11 @@ func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
 	}
 }
 
-// AsyncGet gets actual result from redis and returns nil if not available
+// AsyncGet gets actual result from backend and returns nil if not available
 func (ar *AsyncResult) AsyncGet() (interface{}, error) {
 	if ar.result != nil {
 		return ar.result.Result, nil
 	}
-	// process
 	val, err := ar.backend.GetResult(ar.taskID)
 	if err != nil {
 		return nil, err

@@ -2,21 +2,26 @@
 // This file is part of gocelery which is released under MIT license.
 // See file LICENSE for full license details.
 
-package gocelery
+package main
 
 import (
 	"log"
 	"math/rand"
 	"reflect"
 	"time"
+
+	"github.com/gocelery/gocelery"
 )
 
-func Example_clientWithNamedArguments() {
+// Run Celery Worker First!
+// celery -A worker worker --loglevel=debug --without-heartbeat --without-mingle
+
+func main() {
 
 	// initialize celery client
-	cli, _ := NewCeleryClient(
-		NewRedisCeleryBroker("redis://"),
-		NewRedisCeleryBackend("redis://"),
+	cli, _ := gocelery.NewCeleryClient(
+		gocelery.NewRedisCeleryBroker("redis://"),
+		gocelery.NewRedisCeleryBackend("redis://"),
 		1,
 	)
 
@@ -26,13 +31,7 @@ func Example_clientWithNamedArguments() {
 	argB := rand.Intn(10)
 
 	// run task
-	asyncResult, err := cli.DelayKwargs(
-		taskName,
-		map[string]interface{}{
-			"a": argA,
-			"b": argB,
-		},
-	)
+	asyncResult, err := cli.Delay(taskName, argA, argB)
 	if err != nil {
 		panic(err)
 	}
