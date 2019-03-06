@@ -49,14 +49,14 @@ func (cc *CeleryClient) StartWorker() {
 	cc.worker.StartWorker()
 }
 
-// StartWorkerWithContext starts celery workers with given parent context
-func (cc *CeleryClient) StartWorkerWithContext(ctx context.Context) {
-	cc.worker.StartWorkerWithContext(ctx)
-}
-
 // StopWorker stops celery workers
 func (cc *CeleryClient) StopWorker() {
 	cc.worker.StopWorker()
+}
+
+// WaitForStopWorker waits for celery workers to terminate
+func (cc *CeleryClient) WaitForStopWorker() {
+	cc.worker.StopWait()
 }
 
 // Delay gets asynchronous result
@@ -111,7 +111,7 @@ type AsyncResult struct {
 	result  *ResultMessage
 }
 
-// Get gets actual result from redis
+// Get gets actual result from backend
 // It blocks for period of time set by timeout and return error if unavailable
 func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
 	ticker := time.NewTicker(50 * time.Millisecond)
