@@ -11,8 +11,8 @@ Go Client/Server for Celery Distributed Task Queue
 
 ## Why?
 
-Having being involved in a number of projects migrating server from python to go, I have realized Go can help improve performance of existing python web applications.
-Celery distributed tasks are used heavily in many python web applications and this library allows you to implement celery workers in Go as well as being able to submit celery tasks in Go.
+Having been involved in several projects migrating servers from Python to Go, I have realized Go can improve performance of existing python web applications.
+As Celery distributed tasks are often used in such web applications, this library allows you to both implement celery workers and submit celery tasks in Go.
 
 You can also use this library as pure go distributed task queue.
 
