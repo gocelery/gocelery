@@ -6,6 +6,7 @@ package gocelery
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -83,12 +84,16 @@ func (b *AMQPCeleryBackend) GetResult(taskID string) (*ResultMessage, error) {
 
 	var resultMessage ResultMessage
 
-	delivery := <-channel
-	deliveryAck(delivery)
-	if err := json.Unmarshal(delivery.Body, &resultMessage); err != nil {
-		return nil, err
+	select {
+	case delivery := <-channel:
+		deliveryAck(delivery)
+		if err := json.Unmarshal(delivery.Body, &resultMessage); err != nil {
+			return nil, err
+		}
+		return &resultMessage, nil
+	default:
+		return nil, fmt.Errorf("result not available")
 	}
-	return &resultMessage, nil
 }
 
 // SetResult sets result back to AMQP queue
