@@ -6,8 +6,8 @@ from celery import Celery
 
 app = Celery(
     'tasks',
-    broker='redis://',
-    backend='redis://',
+    broker='amqp://',
+    backend='amqp://',
 )
 
 app.conf.update(

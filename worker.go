@@ -32,7 +32,7 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 		backend:         backend,
 		numWorkers:      numWorkers,
 		registeredTasks: map[string]interface{}{},
-		rateLimitPeriod: 100 * time.Millisecond,
+		rateLimitPeriod: 1 * time.Second,
 	}
 }
 
@@ -56,6 +56,8 @@ func (w *CeleryWorker) StartWorkerWithContext(ctx context.Context) {
 						continue
 					}
 
+					log.Printf("received task message: %v", taskMessage)
+
 					// run task
 					resultMsg, err := w.RunTask(taskMessage)
 					if err != nil {
@@ -64,12 +66,16 @@ func (w *CeleryWorker) StartWorkerWithContext(ctx context.Context) {
 					}
 					defer releaseResultMessage(resultMsg)
 
+					log.Printf("ran task message")
+
 					// push result to backend
 					err = w.backend.SetResult(taskMessage.ID, resultMsg)
 					if err != nil {
 						log.Printf("failed to push result: %+v", err)
 						continue
 					}
+
+					log.Printf("set result")
 				}
 			}
 		}(i)
