@@ -10,6 +10,7 @@ import (
 	"log"
 	"reflect"
 	"sync"
+	"time"
 )
 
 // CeleryWorker represents distributed task worker
@@ -21,6 +22,7 @@ type CeleryWorker struct {
 	taskLock        sync.RWMutex
 	cancel          context.CancelFunc
 	workWG          sync.WaitGroup
+	rateLimitPeriod time.Duration
 }
 
 // NewCeleryWorker returns new celery worker
@@ -30,6 +32,7 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 		backend:         backend,
 		numWorkers:      numWorkers,
 		registeredTasks: map[string]interface{}{},
+		rateLimitPeriod: 100 * time.Millisecond,
 	}
 }
 
@@ -38,16 +41,15 @@ func (w *CeleryWorker) StartWorkerWithContext(ctx context.Context) {
 	var wctx context.Context
 	wctx, w.cancel = context.WithCancel(ctx)
 	w.workWG.Add(w.numWorkers)
-
 	for i := 0; i < w.numWorkers; i++ {
 		go func(workerID int) {
 			defer w.workWG.Done()
+			ticker := time.NewTicker(w.rateLimitPeriod)
 			for {
 				select {
 				case <-wctx.Done():
 					return
-				default:
-
+				case <-ticker.C:
 					// process task request
 					taskMessage, err := w.broker.GetTaskMessage()
 					if err != nil || taskMessage == nil {
