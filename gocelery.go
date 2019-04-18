@@ -26,7 +26,7 @@ type CeleryBroker interface {
 // CeleryBackend is interface for celery backend database
 type CeleryBackend interface {
 	GetResult(string) (*ResultMessage, error) // must be non-blocking
-	SetResult(TaskID string, result *ResultMessage) error
+	SetResult(taskID string, result *ResultMessage) error
 }
 
 // NewCeleryClient creates new celery client
