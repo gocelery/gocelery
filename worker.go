@@ -150,7 +150,9 @@ func runTaskFunc(taskFunc *reflect.Value, message *TaskMessage) (*ResultMessage,
 		if origType == reflect.Int && msgType == reflect.Float64 {
 			arg = int(arg.(float64))
 		}
-
+		if origType == reflect.Float32 {
+			arg = arg.(float32)
+		}
 		in[i] = reflect.ValueOf(arg)
 	}
 
