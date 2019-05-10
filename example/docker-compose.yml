@@ -1,0 +1,14 @@
+version: '3'
+services:
+  redis:
+    image: redis:2.8
+    ports:
+      - 6379:6379
+    container_name: redis
+  celery:
+    image: celery:4.0.2
+    depends_on:
+      - redis
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+    container_name: celery
