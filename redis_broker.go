@@ -37,11 +37,16 @@ func NewRedisPool(uri string) *redis.Pool {
 	}
 }
 
-// NewRedisCeleryBroker creates new RedisCeleryBroker based on given uri
-func NewRedisCeleryBroker(uri string) *RedisCeleryBroker {
+// NewRedisCeleryBroker creates new RedisCeleryBroker based on given uri,
+// queue is an optional parameter to force the queue, default is 'celery'
+func NewRedisCeleryBroker(uri string, queue ...string) *RedisCeleryBroker {
+	queueName := DefaultQueueName
+	if len(queue) > 0 && queue[0] != "" {
+		queueName = queue[0]
+	}
 	return &RedisCeleryBroker{
 		Pool:      NewRedisPool(uri),
-		queueName: "celery",
+		queueName: queueName,
 	}
 }
 
@@ -72,14 +77,16 @@ func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 		return nil, fmt.Errorf("null message received from redis")
 	}
 	messageList := messageJSON.([]interface{})
-	if string(messageList[0].([]byte)) != "celery" {
-		return nil, fmt.Errorf("not a celery message: %v", messageList[0])
-	}
 	var message CeleryMessage
 	if err := json.Unmarshal(messageList[1].([]byte), &message); err != nil {
 		return nil, err
 	}
 	return &message, nil
+}
+
+// SetBrokerQueue changes redis broken queue
+func (cb *RedisCeleryBroker) SetBrokerQueue(queue string) {
+	cb.queueName = queue
 }
 
 // GetTaskMessage retrieves task message from redis queue

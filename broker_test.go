@@ -55,11 +55,6 @@ func TestBrokerRedisSend(t *testing.T) {
 			continue
 		}
 		messageList := messageJSON.([]interface{})
-		if string(messageList[0].([]byte)) != "celery" {
-			t.Errorf("test '%s': non celery message received", tc.name)
-			releaseCeleryMessage(celeryMessage)
-			continue
-		}
 		var message CeleryMessage
 		if err := json.Unmarshal(messageList[1].([]byte), &message); err != nil {
 			t.Errorf("test '%s': failed to unmarshal received message: %v", tc.name, err)

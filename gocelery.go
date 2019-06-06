@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const DefaultQueueName = "celery"
+
 // CeleryClient provides API for sending celery tasks
 type CeleryClient struct {
 	broker  CeleryBroker
@@ -21,6 +23,7 @@ type CeleryClient struct {
 type CeleryBroker interface {
 	SendCeleryMessage(*CeleryMessage) error
 	GetTaskMessage() (*TaskMessage, error) // must be non-blocking
+	SetBrokerQueue(string)
 }
 
 // CeleryBackend is interface for celery backend database
@@ -61,6 +64,11 @@ func (cc *CeleryClient) StopWorker() {
 // WaitForStopWorker waits for celery workers to terminate
 func (cc *CeleryClient) WaitForStopWorker() {
 	cc.worker.StopWait()
+}
+
+// SetBrokerQueue sets the queue of the broker to the specified one
+func (cc *CeleryClient) SetBrokerQueue(queue string) {
+	cc.broker.SetBrokerQueue(queue)
 }
 
 // Delay gets asynchronous result
