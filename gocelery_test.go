@@ -17,10 +17,12 @@ import (
 const TIMEOUT = 2 * time.Second
 
 var (
-	redisBroker  = NewRedisCeleryBroker("redis://")
-	redisBackend = NewRedisCeleryBackend("redis://")
-	amqpBroker   = NewAMQPCeleryBroker("amqp://")
-	amqpBackend  = NewAMQPCeleryBackend("amqp://")
+	redisBroker      = NewRedisCeleryBroker("redis://")
+	redisBrokerQueue = NewRedisCeleryBroker("redis://", "custom_queue")
+	redisBackend     = NewRedisCeleryBackend("redis://")
+	amqpBroker       = NewAMQPCeleryBroker("amqp://")
+	amqpBrokerQueue  = NewAMQPCeleryBroker("amqp://", "custom_queue")
+	amqpBackend      = NewAMQPCeleryBackend("amqp://")
 )
 
 // TestInteger tests successful function execution
@@ -47,8 +49,28 @@ func TestInteger(t *testing.T) {
 			expected: 8953,
 		},
 		{
+			name:     "integer addition with redis broker on custom queue/backend",
+			broker:   redisBrokerQueue,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: addInt,
+			inA:      2485,
+			inB:      6468,
+			expected: 8953,
+		},
+		{
 			name:     "integer addition with amqp broker/backend",
 			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: addInt,
+			inA:      2485,
+			inB:      6468,
+			expected: 8953,
+		},
+		{
+			name:     "integer addition with amqp broker on custom queue/backend",
+			broker:   amqpBrokerQueue,
 			backend:  amqpBackend,
 			taskName: uuid.Must(uuid.NewV4()).String(),
 			taskFunc: addInt,
