@@ -12,9 +12,8 @@ import (
 
 // deliveryAck acknowledges delivery message with retries on error
 func deliveryAck(delivery amqp.Delivery) {
-	retryCount := 3
 	var err error
-	for retryCount > 0 {
+	for retryCount := 3; retryCount > 0; retryCount-- {
 		if err = delivery.Ack(false); err == nil {
 			break
 		}
