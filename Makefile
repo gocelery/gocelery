@@ -12,5 +12,5 @@ lint: build-lint
 
 .PHONY: test
 test:
-	go test -timeout 30s -v -cover ./...
+	go test -timeout 30s -v -cover .
 
