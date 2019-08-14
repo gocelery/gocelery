@@ -18,5 +18,5 @@ install:
   - dep ensure
 script:
   - golangci-lint run
-  - go test -v -cover ./...
+  - go test -v -cover .
   - goveralls -service=travis-ci
