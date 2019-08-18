@@ -38,10 +38,14 @@ func NewRedisPool(uri string) *redis.Pool {
 }
 
 // NewRedisCeleryBroker creates new RedisCeleryBroker based on given uri
-func NewRedisCeleryBroker(uri string) *RedisCeleryBroker {
+func NewRedisCeleryBroker(uri string, queuename string) *RedisCeleryBroker {
+	qName := "celery"
+	if queuename != "" {
+		qName = queuename
+	}
 	return &RedisCeleryBroker{
 		Pool:      NewRedisPool(uri),
-		queueName: "celery",
+		queueName: qName,
 	}
 }
 
@@ -72,7 +76,7 @@ func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 		return nil, fmt.Errorf("null message received from redis")
 	}
 	messageList := messageJSON.([]interface{})
-	if string(messageList[0].([]byte)) != "celery" {
+	if string(messageList[0].([]byte)) != cd.queueName {
 		return nil, fmt.Errorf("not a celery message: %v", messageList[0])
 	}
 	var message CeleryMessage
