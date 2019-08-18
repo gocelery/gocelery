@@ -17,7 +17,7 @@ import (
 const TIMEOUT = 2 * time.Second
 
 var (
-	redisBroker  = NewRedisCeleryBroker("redis://")
+	redisBroker  = NewRedisCeleryBroker("redis://", "")
 	redisBackend = NewRedisCeleryBackend("redis://")
 	amqpBroker   = NewAMQPCeleryBroker("amqp://")
 	amqpBackend  = NewAMQPCeleryBackend("amqp://")

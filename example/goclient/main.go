@@ -20,7 +20,7 @@ func main() {
 
 	// initialize celery client
 	cli, _ := gocelery.NewCeleryClient(
-		gocelery.NewRedisCeleryBroker("redis://"),
+		gocelery.NewRedisCeleryBroker("redis://", ""),
 		gocelery.NewRedisCeleryBackend("redis://"),
 		1,
 	)

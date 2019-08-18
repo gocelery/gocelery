@@ -58,7 +58,7 @@ Run Celery Worker implemented in Go
 ```go
 // initialize celery client
 cli, _ := NewCeleryClient(
-	NewRedisCeleryBroker("redis://"),
+	NewRedisCeleryBroker("redis://", ""),
 	NewRedisCeleryBackend("redis://"),
 	5, // number of workers
 )
@@ -131,7 +131,7 @@ Submit Task from Go Client
 func main() {
     // initialize celery client
 	cli, _ := NewCeleryClient(
-		NewRedisCeleryBroker("redis://"),
+		NewRedisCeleryBroker("redis://", ""),
 		NewRedisCeleryBackend("redis://"),
 		1,
 	)

@@ -15,7 +15,7 @@ func Example_client() {
 
 	// initialize celery client
 	cli, _ := NewCeleryClient(
-		NewRedisCeleryBroker("redis://"),
+		NewRedisCeleryBroker("redis://", ""),
 		NewRedisCeleryBackend("redis://"),
 		1,
 	)

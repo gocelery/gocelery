@@ -13,7 +13,7 @@ func Example_workerWithContext() {
 
 	// initialize celery client
 	cli, _ := NewCeleryClient(
-		NewRedisCeleryBroker("redis://"),
+		NewRedisCeleryBroker("redis://", ""),
 		NewRedisCeleryBackend("redis://"),
 		1,
 	)
