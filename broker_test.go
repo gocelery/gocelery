@@ -48,7 +48,7 @@ func TestBrokerRedisSend(t *testing.T) {
 		}
 		conn := tc.broker.Get()
 		defer conn.Close()
-		messageJSON, err := conn.Do("BLPOP", tc.broker.queueName, "1")
+		messageJSON, err := conn.Do("BRPOP", tc.broker.queueName, "1")
 		if err != nil || messageJSON == nil {
 			t.Errorf("test '%s': failed to get celery message from broker: %v", tc.name, err)
 			releaseCeleryMessage(celeryMessage)
