@@ -54,6 +54,7 @@ type AMQPCeleryBroker struct {
 	queue            *AMQPQueue
 	consumingChannel <-chan amqp.Delivery
 	rate             int
+	routes           map[string]*Route
 }
 
 // NewAMQPConnection creates new AMQP channel
@@ -80,10 +81,15 @@ func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Ch
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
 		connection: conn,
-		exchange:   NewAMQPExchange("default"),
-		queue:      NewAMQPQueue("celery"),
+		exchange:   NewAMQPExchange(defaultExchangeName),
+		queue:      NewAMQPQueue(defaultQueueName),
 		rate:       4,
+		routes: map[string]*Route{defaultRoute: &Route{
+			Exchange:   defaultExchangeName,
+			RoutingKey: defaultQueueName,
+			Queue:      defaultQueueName}},
 	}
+
 	if err := broker.CreateExchange(); err != nil {
 		panic(err)
 	}
@@ -99,6 +105,95 @@ func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Ch
 	return broker
 }
 
+// AddRoute defines an exchange -> routing key -> queue Route for a task with a given name
+func (b *AMQPCeleryBroker) AddRoute(taskName string, route *Route) {
+	b.routes[taskName] = route
+}
+
+// GetRoute returns a custom route for the specified task if one is defined, otherwise the default route
+func (b *AMQPCeleryBroker) GetRoute(taskName string) *Route {
+	route, ok := b.routes[taskName]
+	if !ok {
+		return b.routes[defaultRoute]
+	}
+
+	return route
+}
+
+// DelRoute removes a specified route from the local map as well as deleting the Queue on amqp
+// but only if there are no consumers on its channel
+func (b AMQPCeleryBroker) DelRoute(taskName string) error {
+	delete(b.routes, taskName)
+	_, err := b.QueueDelete(taskName, false, true, true)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SetDefaultRoute modifies the default route
+func (b *AMQPCeleryBroker) SetDefaultRoute(route *Route) {
+	// delete the old queue if there are no consumers
+	_, err := b.QueueDelete(b.routes[defaultRoute].Queue, false, true, true)
+	if err != nil {
+		panic(err)
+	}
+
+	b.routes[defaultRoute] = route
+
+	// When the default route changes we change the queue that the consuming channel listens on
+	if err = b.ConfigureAMQPServerRoute(route); err != nil {
+		panic(err)
+	}
+	b.queue.Name = route.Queue
+	if err := b.StartConsumingChannel(); err != nil {
+		panic(err)
+	}
+}
+
+// ConfigureAMQPServerRoute declares the Queue and Exchange from a route, then binds them using the routing key
+func (b *AMQPCeleryBroker) ConfigureAMQPServerRoute(route *Route) error {
+	_, err := b.QueueDeclare(
+		route.Queue, // name
+		true,        // durable
+		false,       // autoDelete
+		false,       // exclusive
+		false,       // noWait
+		nil,         // args
+	)
+	if err != nil {
+		return err
+	}
+
+	err = b.ExchangeDeclare(
+		route.Exchange,
+		"direct",
+		true,
+		true,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = b.QueueBind(
+		route.Queue,
+		route.RoutingKey,
+		route.Exchange,
+		false,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // StartConsumingChannel spawns receiving channel on AMQP queue
 func (b *AMQPCeleryBroker) StartConsumingChannel() error {
 	channel, err := b.Consume(b.queue.Name, "", false, false, false, false, nil)
@@ -112,27 +207,10 @@ func (b *AMQPCeleryBroker) StartConsumingChannel() error {
 // SendCeleryMessage sends CeleryMessage to broker
 func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	taskMessage := message.GetTaskMessage()
-	queueName := "celery"
-	_, err := b.QueueDeclare(
-		queueName, // name
-		true,      // durable
-		false,     // autoDelete
-		false,     // exclusive
-		false,     // noWait
-		nil,       // args
-	)
-	if err != nil {
-		return err
-	}
-	err = b.ExchangeDeclare(
-		"default",
-		"direct",
-		true,
-		true,
-		false,
-		false,
-		nil,
-	)
+
+	route := b.GetRoute(taskMessage.Task)
+
+	err := b.ConfigureAMQPServerRoute(route)
 	if err != nil {
 		return err
 	}
@@ -150,8 +228,8 @@ func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	}
 
 	return b.Publish(
-		"",
-		queueName,
+		route.Exchange,
+		route.RoutingKey,
 		false,
 		false,
 		publishMessage,

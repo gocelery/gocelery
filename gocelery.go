@@ -21,6 +21,10 @@ type CeleryClient struct {
 type CeleryBroker interface {
 	SendCeleryMessage(*CeleryMessage) error
 	GetTaskMessage() (*TaskMessage, error) // must be non-blocking
+	AddRoute(taskName string, route *Route)
+	GetRoute(taskName string) *Route
+	DelRoute(taskName string) error
+	SetDefaultRoute(route *Route)
 }
 
 // CeleryBackend is interface for celery backend database
@@ -28,6 +32,19 @@ type CeleryBackend interface {
 	GetResult(string) (*ResultMessage, error) // must be non-blocking
 	SetResult(taskID string, result *ResultMessage) error
 }
+
+// Route stores message routing details
+type Route struct {
+	Exchange   string
+	RoutingKey string
+	Queue      string
+}
+
+const (
+	defaultRoute        = "default"
+	defaultQueueName    = "celery"
+	defaultExchangeName = "celery"
+)
 
 // NewCeleryClient creates new celery client
 func NewCeleryClient(broker CeleryBroker, backend CeleryBackend, numWorkers int) (*CeleryClient, error) {
