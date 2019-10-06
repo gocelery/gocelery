@@ -7,6 +7,7 @@ package gocelery
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -85,6 +86,8 @@ func (cc *CeleryClient) delay(task *TaskMessage) (*AsyncResult, error) {
 	}
 	celeryMessage := getCeleryMessage(encodedMessage)
 	defer releaseCeleryMessage(celeryMessage)
+
+	log.Printf("SendCeleryMessage")
 	err = cc.broker.SendCeleryMessage(celeryMessage)
 	if err != nil {
 		return nil, err

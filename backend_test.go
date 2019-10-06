@@ -10,9 +10,27 @@ import (
 	"math/rand"
 	"reflect"
 	"testing"
+	"time"
 
 	uuid "github.com/satori/go.uuid"
 )
+
+func getResultWithTimeout(backend CeleryBackend, taskID string, timeout time.Duration) (*ResultMessage, error) {
+	ticker := time.NewTicker(50 * time.Millisecond)
+	timeoutChan := time.After(timeout)
+	for {
+		select {
+		case <-timeoutChan:
+			return nil, fmt.Errorf("failed to get result for task %s within timeout", taskID)
+		case <-ticker.C:
+			val, err := backend.GetResult(taskID)
+			if err != nil {
+				continue
+			}
+			return val, err
+		}
+	}
+}
 
 // TestBackendRedisGetResult is Redis specific test to get result from backend
 func TestBackendRedisGetResult(t *testing.T) {
@@ -44,7 +62,8 @@ func TestBackendRedisGetResult(t *testing.T) {
 			releaseResultMessage(resultMessage)
 			continue
 		}
-		res, err := tc.backend.GetResult(taskID)
+
+		res, err := getResultWithTimeout(tc.backend, taskID, TIMEOUT)
 		if err != nil {
 			t.Errorf("test '%s': error getting result from backend: %v", tc.name, err)
 			releaseResultMessage(resultMessage)
@@ -130,7 +149,7 @@ func TestBackendSetGetResult(t *testing.T) {
 			releaseResultMessage(resultMessage)
 			continue
 		}
-		res, err := tc.backend.GetResult(taskID)
+		res, err := getResultWithTimeout(tc.backend, taskID, TIMEOUT)
 		if err != nil {
 			t.Errorf("error getting result from backend: %v", err)
 			releaseResultMessage(resultMessage)

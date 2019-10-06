@@ -14,14 +14,29 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-const TIMEOUT = 2 * time.Second
+const TIMEOUT = 5 * time.Second
 
 var (
 	redisBroker  = NewRedisCeleryBroker("redis://")
 	redisBackend = NewRedisCeleryBackend("redis://")
-	amqpBroker   = NewAMQPCeleryBroker("amqp://")
-	amqpBackend  = NewAMQPCeleryBackend("amqp://")
+	amqpBroker   *AMQPBroker
+	amqpBackend  *AMQPBackend
 )
+
+func init() {
+	amqpConnection := AMQPConnection{
+		ConnStr: "amqp://",
+	}
+	if err := amqpConnection.Connect(); err != nil {
+		panic(err)
+	}
+	amqpBroker = &AMQPBroker{
+		AMQPConnection: &amqpConnection,
+	}
+	amqpBackend = &AMQPBackend{
+		AMQPConnection: &amqpConnection,
+	}
+}
 
 // TestInteger tests successful function execution
 // with integer arguments and return value

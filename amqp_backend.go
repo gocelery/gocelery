@@ -1,7 +1,3 @@
-// Copyright (c) 2019 Sick Yoon
-// This file is part of gocelery which is released under MIT license.
-// See file LICENSE for full license details.
-
 package gocelery
 
 import (
@@ -12,48 +8,18 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// AMQPCeleryBackend CeleryBackend for AMQP
-type AMQPCeleryBackend struct {
-	*amqp.Channel
-	connection *amqp.Connection
-	host       string
-}
-
-// NewAMQPCeleryBackendByConnAndChannel creates new AMQPCeleryBackend by AMQP connection and channel
-func NewAMQPCeleryBackendByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel) *AMQPCeleryBackend {
-	backend := &AMQPCeleryBackend{
-		Channel:    channel,
-		connection: conn,
-	}
-	return backend
-}
-
-// NewAMQPCeleryBackend creates new AMQPCeleryBackend
-func NewAMQPCeleryBackend(host string) *AMQPCeleryBackend {
-	backend := NewAMQPCeleryBackendByConnAndChannel(NewAMQPConnection(host))
-	backend.host = host
-	return backend
-}
-
-// Reconnect reconnects to AMQP server
-func (b *AMQPCeleryBackend) Reconnect() {
-	b.connection.Close()
-	conn, channel := NewAMQPConnection(b.host)
-	b.Channel = channel
-	b.connection = conn
+type AMQPBackend struct {
+	*AMQPConnection
 }
 
 // GetResult retrieves result from AMQP queue
-func (b *AMQPCeleryBackend) GetResult(taskID string) (*ResultMessage, error) {
-
+func (b *AMQPBackend) GetResult(taskID string) (*ResultMessage, error) {
 	queueName := strings.Replace(taskID, "-", "", -1)
-
 	args := amqp.Table{"x-expires": int32(86400000)}
-
-	_, err := b.QueueDeclare(
+	q, err := b.Channel.QueueDeclare(
 		queueName, // name
 		true,      // durable
-		true,      // autoDelete
+		false,     // autoDelete
 		false,     // exclusive
 		false,     // noWait
 		args,      // args
@@ -61,52 +27,50 @@ func (b *AMQPCeleryBackend) GetResult(taskID string) (*ResultMessage, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	err = b.ExchangeDeclare(
-		"default",
-		"direct",
-		true,
-		true,
+	if err = b.Channel.Qos(1, 0, false); err != nil {
+		return nil, err
+	}
+	deliveryChan, err := b.Channel.Consume(
+		q.Name,
+		"",
+		false,
+		false,
 		false,
 		false,
 		nil,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	// open channel temporarily
-	channel, err := b.Consume(queueName, "", false, false, false, false, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	var resultMessage ResultMessage
 
-	delivery := <-channel
-	deliveryAck(delivery)
-	if err := json.Unmarshal(delivery.Body, &resultMessage); err != nil {
-		return nil, err
+	select {
+	case <-b.CloseErr:
+		return nil, ErrConnection
+	case <-b.BlockErr:
+		return nil, ErrBlocked
+	case delivery := <-deliveryChan:
+		deliveryAck(delivery)
+		if err := json.Unmarshal(delivery.Body, &resultMessage); err != nil {
+			return nil, err
+		}
+		return &resultMessage, nil
 	}
-	return &resultMessage, nil
 }
 
 // SetResult sets result back to AMQP queue
-func (b *AMQPCeleryBackend) SetResult(taskID string, result *ResultMessage) error {
-
+func (b *AMQPBackend) SetResult(taskID string, result *ResultMessage) error {
 	result.ID = taskID
-
-	//queueName := taskID
 	queueName := strings.Replace(taskID, "-", "", -1)
+	args := amqp.Table{"x-expires": int32(86400000)}
 
 	// autodelete is automatically set to true by python
 	// (406) PRECONDITION_FAILED - inequivalent arg 'durable' for queue 'bc58c0d895c7421eb7cb2b9bbbd8b36f' in vhost '/': received 'true' but current is 'false'
-
-	args := amqp.Table{"x-expires": int32(86400000)}
-	_, err := b.QueueDeclare(
+	q, err := b.Channel.QueueDeclare(
 		queueName, // name
 		true,      // durable
-		true,      // autoDelete
+		false,     // autoDelete
 		false,     // exclusive
 		false,     // noWait
 		args,      // args
@@ -114,36 +78,30 @@ func (b *AMQPCeleryBackend) SetResult(taskID string, result *ResultMessage) erro
 	if err != nil {
 		return err
 	}
-
-	err = b.ExchangeDeclare(
-		"default",
-		"direct",
-		true,
-		true,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
+	if err = b.Channel.Qos(1, 0, false); err != nil {
 		return err
 	}
-
 	resBytes, err := json.Marshal(result)
 	if err != nil {
 		return err
 	}
-
-	message := amqp.Publishing{
-		DeliveryMode: amqp.Persistent,
-		Timestamp:    time.Now(),
-		ContentType:  "application/json",
-		Body:         resBytes,
+	select {
+	case <-b.CloseErr:
+		return ErrConnection
+	case <-b.BlockErr:
+		return ErrBlocked
+	default:
+		return b.Channel.Publish(
+			"",
+			q.Name,
+			false,
+			false,
+			amqp.Publishing{
+				DeliveryMode: amqp.Persistent,
+				Timestamp:    time.Now(),
+				ContentType:  JSONContentType,
+				Body:         resBytes,
+			},
+		)
 	}
-	return b.Publish(
-		"",
-		queueName,
-		false,
-		false,
-		message,
-	)
 }
