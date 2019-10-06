@@ -18,26 +18,18 @@ type RedisCeleryBroker struct {
 	queueName string
 }
 
-// NewRedisPool creates pool of redis connections from given connection string
-func NewRedisPool(uri string) *redis.Pool {
-	return &redis.Pool{
-		MaxIdle:     3,
-		IdleTimeout: 240 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.DialURL(uri)
-			if err != nil {
-				return nil, err
-			}
-			return c, err
-		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
-		},
+// NewRedisBroker creates new RedisCeleryBroker with given redis connection pool
+func NewRedisBroker(conn *redis.Pool) *RedisCeleryBroker {
+	return &RedisCeleryBroker{
+		Pool:      conn,
+		queueName: "celery",
 	}
 }
 
 // NewRedisCeleryBroker creates new RedisCeleryBroker based on given uri
+//
+// Deprecated: NewRedisCeleryBroker exists for historical compatibility
+// and should not be used. Use NewRedisBroker instead to create new RedisCeleryBroker.
 func NewRedisCeleryBroker(uri string) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
 		Pool:      NewRedisPool(uri),
@@ -89,4 +81,26 @@ func (cb *RedisCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
 		return nil, err
 	}
 	return celeryMessage.GetTaskMessage(), nil
+}
+
+// NewRedisPool creates pool of redis connections from given connection string
+//
+// Deprecated: newRedisPool exists for historical compatibility
+// and should not be used. Pool should be initialized outside of gocelery package.
+func NewRedisPool(uri string) *redis.Pool {
+	return &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.DialURL(uri)
+			if err != nil {
+				return nil, err
+			}
+			return c, err
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
+		},
+	}
 }

@@ -16,7 +16,18 @@ type RedisCeleryBackend struct {
 	*redis.Pool
 }
 
+// NewRedisBackend creates new RedisCeleryBackend with given redis pool.
+// RedisCeleryBackend can be initialized manually as well.
+func NewRedisBackend(conn *redis.Pool) *RedisCeleryBackend {
+	return &RedisCeleryBackend{
+		Pool: conn,
+	}
+}
+
 // NewRedisCeleryBackend creates new RedisCeleryBackend
+//
+// Deprecated: NewRedisCeleryBackend exists for historical compatibility
+// and should not be used. Pool should be initialized outside of gocelery package.
 func NewRedisCeleryBackend(uri string) *RedisCeleryBackend {
 	return &RedisCeleryBackend{
 		Pool: NewRedisPool(uri),

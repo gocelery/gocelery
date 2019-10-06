@@ -27,3 +27,4 @@ _testmain.go
 
 coverage.out
 vendor
+.vscode/

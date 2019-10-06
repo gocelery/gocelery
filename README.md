@@ -56,10 +56,21 @@ Also take a look at `example` directory for sample python code.
 Run Celery Worker implemented in Go
 
 ```go
+// create redis connection pool
+redisPool := &redis.Pool{
+  Dial: func() (redis.Conn, error) {
+		c, err := redis.DialURL("redis://")
+		if err != nil {
+			return nil, err
+		}
+		return c, err
+	},
+}
+
 // initialize celery client
-cli, _ := NewCeleryClient(
-	NewRedisCeleryBroker("redis://"),
-	NewRedisCeleryBackend("redis://"),
+cli, _ := gocelery.NewCeleryClient(
+	gocelery.NewRedisBroker(redisPool),
+	&gocelery.RedisCeleryBackend{Pool: redisPool},
 	5, // number of workers
 )
 
@@ -128,33 +139,42 @@ celery -A worker worker --loglevel=debug --without-heartbeat --without-mingle
 Submit Task from Go Client
 
 ```go
-func main() {
-    // initialize celery client
-	cli, _ := NewCeleryClient(
-		NewRedisCeleryBroker("redis://"),
-		NewRedisCeleryBackend("redis://"),
-		1,
-	)
-
-	// prepare arguments
-	taskName := "worker.add"
-	argA := rand.Intn(10)
-	argB := rand.Intn(10)
-
-	// run task
-	asyncResult, err := cli.Delay(taskName, argA, argB)
-	if err != nil {
-		panic(err)
-	}
-
-	// get results from backend with timeout
-	res, err := asyncResult.Get(10 * time.Second)
-	if err != nil {
-		panic(err)
-	}
-
-	log.Printf("result: %+v of type %+v", res, reflect.TypeOf(res))
+// create redis connection pool
+redisPool := &redis.Pool{
+  Dial: func() (redis.Conn, error) {
+		c, err := redis.DialURL("redis://")
+		if err != nil {
+			return nil, err
+		}
+		return c, err
+	},
 }
+
+// initialize celery client
+cli, _ := gocelery.NewCeleryClient(
+	gocelery.NewRedisBroker(redisPool),
+	&gocelery.RedisCeleryBackend{Pool: redisPool},
+	1,
+)
+
+// prepare arguments
+taskName := "worker.add"
+argA := rand.Intn(10)
+argB := rand.Intn(10)
+
+// run task
+asyncResult, err := cli.Delay(taskName, argA, argB)
+if err != nil {
+	panic(err)
+}
+
+// get results from backend with timeout
+res, err := asyncResult.Get(10 * time.Second)
+if err != nil {
+	panic(err)
+}
+
+log.Printf("result: %+v of type %+v", res, reflect.TypeOf(res))
 ```
 
 ## Sample Celery Task Message
