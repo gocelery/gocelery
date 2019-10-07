@@ -33,6 +33,10 @@ func TestBrokerRedisSend(t *testing.T) {
 			name:   "send task to redis broker",
 			broker: redisBroker,
 		},
+		{
+			name:   "send task to redis broker with connection",
+			broker: redisBrokerWithConn,
+		},
 	}
 	for _, tc := range testCases {
 		celeryMessage, err := makeCeleryMessage()
@@ -83,6 +87,10 @@ func TestBrokerRedisGet(t *testing.T) {
 			name:   "get task from redis broker",
 			broker: redisBroker,
 		},
+		{
+			name:   "get task from redis broker with connection",
+			broker: redisBrokerWithConn,
+		},
 	}
 	for _, tc := range testCases {
 		celeryMessage, err := makeCeleryMessage()
@@ -126,6 +134,10 @@ func TestBrokerSendGet(t *testing.T) {
 		{
 			name:   "send/get task for redis broker",
 			broker: redisBroker,
+		},
+		{
+			name:   "send/get task for redis broker with connection",
+			broker: redisBrokerWithConn,
 		},
 		{
 			name:   "send/get task for amqp broker",

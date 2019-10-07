@@ -24,6 +24,10 @@ func TestBackendRedisGetResult(t *testing.T) {
 			name:    "get result from redis backend",
 			backend: redisBackend,
 		},
+		{
+			name:    "get result from redis backend with connection",
+			backend: redisBackendWithConn,
+		},
 	}
 	for _, tc := range testCases {
 		taskID := uuid.Must(uuid.NewV4()).String()
@@ -66,6 +70,10 @@ func TestBackendRedisSetResult(t *testing.T) {
 		{
 			name:    "set result to redis backend",
 			backend: redisBackend,
+		},
+		{
+			name:    "set result to redis backend with connection",
+			backend: redisBackendWithConn,
 		},
 	}
 	for _, tc := range testCases {
@@ -114,6 +122,10 @@ func TestBackendSetGetResult(t *testing.T) {
 		{
 			name:    "set/get result to redis backend",
 			backend: redisBackend,
+		},
+		{
+			name:    "set/get result to redis backend with connection",
+			backend: redisBackendWithConn,
 		},
 		{
 			name:    "set/get result to amqp backend",
