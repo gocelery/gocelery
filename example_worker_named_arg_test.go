@@ -7,6 +7,8 @@ package gocelery
 import (
 	"fmt"
 	"time"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 // exampleAddTask is integer addition task
@@ -45,10 +47,21 @@ func (a *exampleAddTask) RunTask() (interface{}, error) {
 
 func Example_workerWithNamedArguments() {
 
+	// create redis connection pool
+	redisPool := &redis.Pool{
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.DialURL("redis://")
+			if err != nil {
+				return nil, err
+			}
+			return c, err
+		},
+	}
+
 	// initialize celery client
 	cli, _ := NewCeleryClient(
-		NewRedisCeleryBroker("redis://"),
-		NewRedisCeleryBackend("redis://"),
+		NewRedisBroker(redisPool),
+		&RedisCeleryBackend{Pool: redisPool},
 		5, // number of workers
 	)
 

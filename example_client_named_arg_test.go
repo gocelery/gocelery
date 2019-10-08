@@ -9,14 +9,28 @@ import (
 	"math/rand"
 	"reflect"
 	"time"
+
+	"github.com/gomodule/redigo/redis"
 )
 
 func Example_clientWithNamedArguments() {
 
+	// create redis connection pool
+	// create redis connection pool
+	redisPool := &redis.Pool{
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.DialURL("redis://")
+			if err != nil {
+				return nil, err
+			}
+			return c, err
+		},
+	}
+
 	// initialize celery client
 	cli, _ := NewCeleryClient(
-		NewRedisCeleryBroker("redis://"),
-		NewRedisCeleryBackend("redis://"),
+		NewRedisBroker(redisPool),
+		&RedisCeleryBackend{Pool: redisPool},
 		1,
 	)
 
