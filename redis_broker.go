@@ -46,6 +46,9 @@ func NewRedisCeleryBroker(uri string, queue string) *RedisCeleryBroker {
 
 // SendCeleryMessage sends CeleryMessage to redis queue
 func (cb *RedisCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
+	message.Properties.DeliveryInfo.Exchange = cb.queueName
+	message.Properties.DeliveryInfo.RoutingKey = cb.queueName
+
 	jsonBytes, err := json.Marshal(message)
 	if err != nil {
 		return err
