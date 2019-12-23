@@ -1,31 +1,7 @@
 name: Go
 on: [push]
 jobs:
-
   build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-
-    - name: Set up Go 1.13
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.13
-      id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v1
-
-    - name: Get dependencies
-      run: |
-        go get -v -t -d ./...
-        go get -u github.com/golang/dep/cmd/dep
-        dep ensure
-
-    - name: Build
-      run: go build -v .
-      
-  test:
     name: Test
     runs-on: ubuntu-latest
     services:
@@ -38,8 +14,28 @@ jobs:
         image: rabbitmq
         ports:
         - 5672:5672
-
     steps:
-      - name: Test
-        run: go test -v .
-
+    - name: Set up Go 1.13
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.13
+      id: go
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        go mod download
+    - name: Build
+      run: go build -v .
+    - name: Lint
+      run: |
+        GO111MODULE=off go get github.com/golangci/golangci-lint/cmd/golangci-lint
+        $(go env GOPATH)/bin/golangci-lint run
+    - name: Test
+      run: go test -v -covermode atomic -coverprofile=profile.cov ./...
+    - name: Coverage
+      env:
+        COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        GO111MODULE=off go get github.com/mattn/goveralls
+        $(go env GOPATH)/bin/goveralls -coverprofile=profile.cov -service=github

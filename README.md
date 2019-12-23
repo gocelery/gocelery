@@ -2,7 +2,7 @@
 
 Go Client/Server for Celery Distributed Task Queue
 
-[![Build Status](https://travis-ci.org/gocelery/gocelery.svg?branch=master)](https://travis-ci.org/gocelery/gocelery)
+[![Build Status](https://github.com/gocelery/gocelery/workflows/Go/badge.svg)](https://github.com/gocelery/gocelery/workflows/Go/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/gocelery/gocelery/badge.svg?branch=master)](https://coveralls.io/github/gocelery/gocelery?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gocelery/gocelery)](https://goreportcard.com/report/github.com/gocelery/gocelery)
 [!["Open Issues"](https://img.shields.io/github/issues-raw/gocelery/gocelery.svg)](https://github.com/gocelery/gocelery/issues)
