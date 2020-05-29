@@ -30,6 +30,15 @@ func NewAMQPExchange(name string) *AMQPExchange {
 	}
 }
 
+func NewCustomAMQPExchange(name string, exchangeType string) *AMQPExchange {
+	return &AMQPExchange{
+		Name:       name,
+		Type:       exchangeType,
+		Durable:    true,
+		AutoDelete: false,
+	}
+}
+
 // AMQPQueue stores AMQP Queue configuration
 type AMQPQueue struct {
 	Name       string
@@ -55,6 +64,55 @@ type AMQPCeleryBroker struct {
 	consumingChannel <-chan amqp.Delivery
 	rate             int
 }
+
+
+// NewAMQPConnection creates new AMQP channel
+func NewCustomAMQPConnection(host string) (*amqp.Connection, *amqp.Channel, error) {
+	connection, err := amqp.Dial(host)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	channel, err := connection.Channel()
+	if err != nil {
+		return nil, nil, err
+	}
+	return connection, channel, nil
+}
+
+func NewCustomAMQPCeleryBroker(host string, exchangeName string, exchangeType string, queueName string) (*AMQPCeleryBroker, error) {
+	exchange := NewCustomAMQPExchange(exchangeName, exchangeType)
+	queue := NewAMQPQueue(queueName)
+	conn, channel, err := NewCustomAMQPConnection(host)
+	if err != nil {
+		return &AMQPCeleryBroker{}, err
+	}
+	return NewCustomAMQPCeleryBrokerSetup(conn, channel, exchange, queue)
+}
+
+func NewCustomAMQPCeleryBrokerSetup(conn *amqp.Connection, channel *amqp.Channel, exchange *AMQPExchange, queue *AMQPQueue) (*AMQPCeleryBroker, error) {
+	broker := &AMQPCeleryBroker{
+		Channel:    channel,
+		connection: conn,
+		exchange:   exchange,
+		queue:      queue,
+		rate:       4,
+	}
+	if err := broker.CheckExchangeExists(); err != nil {
+		return &AMQPCeleryBroker{}, err
+	}
+	if err := broker.CheckQueueExists(); err != nil {
+		return &AMQPCeleryBroker{}, err
+	}
+	if err := broker.Qos(broker.rate, 0, false); err != nil {
+		return &AMQPCeleryBroker{}, err
+	}
+	if err := broker.StartConsumingChannel(); err != nil {
+		return &AMQPCeleryBroker{}, err
+	}
+	return broker, nil
+}
+
 
 // NewAMQPConnection creates new AMQP channel
 func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
@@ -112,30 +170,6 @@ func (b *AMQPCeleryBroker) StartConsumingChannel() error {
 // SendCeleryMessage sends CeleryMessage to broker
 func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	taskMessage := message.GetTaskMessage()
-	queueName := "celery"
-	_, err := b.QueueDeclare(
-		queueName, // name
-		true,      // durable
-		false,     // autoDelete
-		false,     // exclusive
-		false,     // noWait
-		nil,       // args
-	)
-	if err != nil {
-		return err
-	}
-	err = b.ExchangeDeclare(
-		"default",
-		"direct",
-		true,
-		true,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		return err
-	}
 
 	resBytes, err := json.Marshal(taskMessage)
 	if err != nil {
@@ -150,8 +184,8 @@ func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	}
 
 	return b.Publish(
-		"",
-		queueName,
+		b.exchange.Name,
+		b.queue.Name,
 		false,
 		false,
 		publishMessage,
@@ -189,6 +223,31 @@ func (b *AMQPCeleryBroker) CreateExchange() error {
 // CreateQueue declares AMQP Queue with stored configuration
 func (b *AMQPCeleryBroker) CreateQueue() error {
 	_, err := b.QueueDeclare(
+		b.queue.Name,
+		b.queue.Durable,
+		b.queue.AutoDelete,
+		false,
+		false,
+		nil,
+	)
+	return err
+}
+
+func (b *AMQPCeleryBroker) CheckExchangeExists() error {
+	return b.ExchangeDeclarePassive(
+		b.exchange.Name,
+		b.exchange.Type,
+		b.exchange.Durable,
+		b.exchange.AutoDelete,
+		false,
+		false,
+		nil,
+	)
+}
+
+// CreateQueue declares AMQP Queue with stored configuration
+func (b *AMQPCeleryBroker) CheckQueueExists() error {
+	_, err := b.QueueDeclarePassive(
 		b.queue.Name,
 		b.queue.Durable,
 		b.queue.AutoDelete,
