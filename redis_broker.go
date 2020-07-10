@@ -52,6 +52,11 @@ func (cb *RedisCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	return nil
 }
 
+//Set custom queue name
+func (cb *RedisCeleryBroker) SetQueueName(queueName string) {
+	cb.queueName = queueName
+}
+
 // GetCeleryMessage retrieves celery message from redis queue
 func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 	conn := cb.Get()
