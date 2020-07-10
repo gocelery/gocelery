@@ -69,7 +69,7 @@ func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 		return nil, fmt.Errorf("null message received from redis")
 	}
 	messageList := messageJSON.([]interface{})
-	if string(messageList[0].([]byte)) != "celery" {
+	if string(messageList[0].([]byte)) != cb.queueName {
 		return nil, fmt.Errorf("not a celery message: %v", messageList[0])
 	}
 	var message CeleryMessage
