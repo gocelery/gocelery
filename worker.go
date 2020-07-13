@@ -119,6 +119,11 @@ func (w *CeleryWorker) GetTask(name string) interface{} {
 // RunTask runs celery task
 func (w *CeleryWorker) RunTask(message *TaskMessage) (*ResultMessage, error) {
 
+	// ignore if the message is expired
+	if message.Expires != nil && message.Expires.UTC().Before(time.Now().UTC()) {
+		return nil, fmt.Errorf("task %s is expired on %s", message.ID, message.Expires)
+	}
+
 	// get task
 	task := w.GetTask(message.Task)
 	if task == nil {
