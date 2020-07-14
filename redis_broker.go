@@ -15,14 +15,14 @@ import (
 // RedisCeleryBroker is celery broker for redis
 type RedisCeleryBroker struct {
 	*redis.Pool
-	queueName string
+	QueueName string
 }
 
 // NewRedisBroker creates new RedisCeleryBroker with given redis connection pool
 func NewRedisBroker(conn *redis.Pool) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
 		Pool:      conn,
-		queueName: "celery",
+		QueueName: "celery",
 	}
 }
 
@@ -33,7 +33,7 @@ func NewRedisBroker(conn *redis.Pool) *RedisCeleryBroker {
 func NewRedisCeleryBroker(uri string) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
 		Pool:      NewRedisPool(uri),
-		queueName: "celery",
+		QueueName: "celery",
 	}
 }
 
@@ -45,7 +45,7 @@ func (cb *RedisCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	}
 	conn := cb.Get()
 	defer conn.Close()
-	_, err = conn.Do("LPUSH", cb.queueName, jsonBytes)
+	_, err = conn.Do("LPUSH", cb.QueueName, jsonBytes)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (cb *RedisCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 	conn := cb.Get()
 	defer conn.Close()
-	messageJSON, err := conn.Do("BRPOP", cb.queueName, "1")
+	messageJSON, err := conn.Do("BRPOP", cb.QueueName, "1")
 	if err != nil {
 		return nil, err
 	}

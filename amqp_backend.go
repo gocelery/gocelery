@@ -15,32 +15,32 @@ import (
 // AMQPCeleryBackend CeleryBackend for AMQP
 type AMQPCeleryBackend struct {
 	*amqp.Channel
-	connection *amqp.Connection
-	host       string
+	Connection *amqp.Connection
+	Host       string
+}
+
+// NewAMQPCeleryBackend creates new AMQPCeleryBackend
+func NewAMQPCeleryBackend(host string) *AMQPCeleryBackend {
+	backend := NewAMQPCeleryBackendByConnAndChannel(NewAMQPConnection(host))
+	backend.Host = host
+	return backend
 }
 
 // NewAMQPCeleryBackendByConnAndChannel creates new AMQPCeleryBackend by AMQP connection and channel
 func NewAMQPCeleryBackendByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel) *AMQPCeleryBackend {
 	backend := &AMQPCeleryBackend{
 		Channel:    channel,
-		connection: conn,
+		Connection: conn,
 	}
-	return backend
-}
-
-// NewAMQPCeleryBackend creates new AMQPCeleryBackend
-func NewAMQPCeleryBackend(host string) *AMQPCeleryBackend {
-	backend := NewAMQPCeleryBackendByConnAndChannel(NewAMQPConnection(host))
-	backend.host = host
 	return backend
 }
 
 // Reconnect reconnects to AMQP server
 func (b *AMQPCeleryBackend) Reconnect() {
-	b.connection.Close()
-	conn, channel := NewAMQPConnection(b.host)
+	b.Connection.Close()
+	conn, channel := NewAMQPConnection(b.Host)
 	b.Channel = channel
-	b.connection = conn
+	b.Connection = conn
 }
 
 // GetResult retrieves result from AMQP queue
