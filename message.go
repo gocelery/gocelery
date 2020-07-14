@@ -117,6 +117,7 @@ type TaskMessage struct {
 	Kwargs  map[string]interface{} `json:"kwargs"`
 	Retries int                    `json:"retries"`
 	ETA     *string                `json:"eta"`
+	Expires *time.Time             `json:"expires"`
 }
 
 func (tm *TaskMessage) reset() {

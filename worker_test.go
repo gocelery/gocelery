@@ -104,6 +104,54 @@ func TestWorkerRunTask(t *testing.T) {
 	}
 }
 
+// TestWorkerExpiredTask tests expired tasks
+func TestWorkerExpiredTask(t *testing.T) {
+	now := time.Now()
+	testCases := []struct {
+		name           string
+		broker         CeleryBroker
+		backend        CeleryBackend
+		expires        *time.Time
+		registeredTask interface{}
+	}{
+		{
+			name:           "run expired task with redis broker/backend",
+			broker:         redisBroker,
+			backend:        redisBackend,
+			expires:        &now,
+			registeredTask: add,
+		},
+		{
+			name:           "run expired task with amqp broker/backend",
+			broker:         amqpBroker,
+			backend:        amqpBackend,
+			expires:        &now,
+			registeredTask: add,
+		},
+	}
+	for _, tc := range testCases {
+		celeryWorker := NewCeleryWorker(tc.broker, tc.backend, 1)
+		taskName := uuid.Must(uuid.NewV4()).String()
+		celeryWorker.Register(taskName, tc.registeredTask)
+		args := []interface{}{
+			rand.Int(),
+			rand.Int(),
+		}
+		taskMessage := &TaskMessage{
+			ID:      uuid.Must(uuid.NewV4()).String(),
+			Task:    taskName,
+			Args:    args,
+			Kwargs:  nil,
+			Retries: 1,
+			ETA:     nil,
+			Expires: tc.expires,
+		}
+		if _, err := celeryWorker.RunTask(taskMessage); err == nil {
+			t.Errorf("test '%s': expired task was not ignored", tc.name)
+		}
+	}
+}
+
 // TestWorkerNumWorkers ensures correct number of workers is set
 func TestWorkerNumWorkers(t *testing.T) {
 	testCases := []struct {
