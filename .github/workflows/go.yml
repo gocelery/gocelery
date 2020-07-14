@@ -1,8 +1,18 @@
 name: Go
 on: [push]
 jobs:
-  build:
-    name: Test
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v1
+        with:
+          # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
+          version: v1.26
+  test:
+    name: test
     runs-on: ubuntu-latest
     services:
       redis:
@@ -25,12 +35,6 @@ jobs:
     - name: Install dependencies
       run: |
         go mod download
-    - name: Build
-      run: go build -v .
-    - name: Lint
-      run: |
-        GO111MODULE=off go get github.com/golangci/golangci-lint/cmd/golangci-lint
-        $(go env GOPATH)/bin/golangci-lint run
     - name: Test
       run: go test -v -covermode atomic -coverprofile=profile.cov ./...
     - name: Coverage
