@@ -49,11 +49,11 @@ func NewAMQPQueue(name string) *AMQPQueue {
 //AMQPCeleryBroker is RedisBroker for AMQP
 type AMQPCeleryBroker struct {
 	*amqp.Channel
-	connection       *amqp.Connection
-	exchange         *AMQPExchange
-	queue            *AMQPQueue
+	Connection       *amqp.Connection
+	Exchange         *AMQPExchange
+	Queue            *AMQPQueue
 	consumingChannel <-chan amqp.Delivery
-	rate             int
+	Rate             int
 }
 
 // NewAMQPConnection creates new AMQP channel
@@ -79,10 +79,10 @@ func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
 func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel) *AMQPCeleryBroker {
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
-		connection: conn,
-		exchange:   NewAMQPExchange("default"),
-		queue:      NewAMQPQueue("celery"),
-		rate:       4,
+		Connection: conn,
+		Exchange:   NewAMQPExchange("default"),
+		Queue:      NewAMQPQueue("celery"),
+		Rate:       4,
 	}
 	if err := broker.CreateExchange(); err != nil {
 		panic(err)
@@ -90,7 +90,7 @@ func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Ch
 	if err := broker.CreateQueue(); err != nil {
 		panic(err)
 	}
-	if err := broker.Qos(broker.rate, 0, false); err != nil {
+	if err := broker.Qos(broker.Rate, 0, false); err != nil {
 		panic(err)
 	}
 	if err := broker.StartConsumingChannel(); err != nil {
@@ -101,7 +101,7 @@ func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Ch
 
 // StartConsumingChannel spawns receiving channel on AMQP queue
 func (b *AMQPCeleryBroker) StartConsumingChannel() error {
-	channel, err := b.Consume(b.queue.Name, "", false, false, false, false, nil)
+	channel, err := b.Consume(b.Queue.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return err
 	}
@@ -176,10 +176,10 @@ func (b *AMQPCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
 // CreateExchange declares AMQP exchange with stored configuration
 func (b *AMQPCeleryBroker) CreateExchange() error {
 	return b.ExchangeDeclare(
-		b.exchange.Name,
-		b.exchange.Type,
-		b.exchange.Durable,
-		b.exchange.AutoDelete,
+		b.Exchange.Name,
+		b.Exchange.Type,
+		b.Exchange.Durable,
+		b.Exchange.AutoDelete,
 		false,
 		false,
 		nil,
@@ -189,9 +189,9 @@ func (b *AMQPCeleryBroker) CreateExchange() error {
 // CreateQueue declares AMQP Queue with stored configuration
 func (b *AMQPCeleryBroker) CreateQueue() error {
 	_, err := b.QueueDeclare(
-		b.queue.Name,
-		b.queue.Durable,
-		b.queue.AutoDelete,
+		b.Queue.Name,
+		b.Queue.Durable,
+		b.Queue.AutoDelete,
 		false,
 		false,
 		nil,
