@@ -35,6 +35,66 @@ var (
 	amqpBackend          = NewAMQPCeleryBackend("amqp://")
 )
 
+// TestNoArg tests successful function execution
+// with no argument and valid return value
+func TestNoArg(t *testing.T) {
+	testCases := []struct {
+		name     string
+		broker   CeleryBroker
+		backend  CeleryBackend
+		taskName string
+		taskFunc interface{}
+		expected int
+	}{
+		{
+			name:     "no argument that returns integer value with redis broker/backend ",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: func() int { return 5545 },
+			expected: 5545,
+		},
+		{
+			name:     "no argument that returns integer value with redis broker/backend ",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &noArgTask{},
+			expected: 1,
+		},
+		{
+			name:     "no argument that returns integer value with amqp broker/backend ",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: func() int { return 6930 },
+			expected: 6930,
+		},
+	}
+	for _, tc := range testCases {
+		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
+		cli.Register(tc.taskName, tc.taskFunc)
+		cli.StartWorker()
+		asyncResult, err := cli.Delay(tc.taskName)
+		if err != nil {
+			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
+			cli.StopWorker()
+			continue
+		}
+		res, err := asyncResult.Get(TIMEOUT)
+		if err != nil {
+			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
+			cli.StopWorker()
+			continue
+		}
+		// json always return float64 intead of int
+		if tc.expected != int(res.(float64)) {
+			t.Errorf("test '%s': returned result %+v is different from expected result %+v", tc.name, res, tc.expected)
+		}
+		cli.StopWorker()
+	}
+}
+
 // TestInteger tests successful function execution
 // with integer arguments and return value
 func TestInteger(t *testing.T) {
@@ -1091,6 +1151,19 @@ func TestMap(t *testing.T) {
 		}
 		cli.StopWorker()
 	}
+}
+
+// noArgTask accepts no function arguments
+type noArgTask struct{}
+
+// ParseKwargs does nothing for noArgTask since there are no arguments to process
+func (a *noArgTask) ParseKwargs(kwargs map[string]interface{}) error {
+	return nil
+}
+
+// RunTask executes noArgTask example by returning hard-coded integer value 1
+func (a *noArgTask) RunTask() (interface{}, error) {
+	return 1, nil
 }
 
 // addInt returns sum of two integers
