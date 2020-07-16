@@ -124,6 +124,11 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) (*ResultMessage, error) {
 		return nil, fmt.Errorf("task %s is expired on %s", message.ID, message.Expires)
 	}
 
+	// check for malformed task message - args cannot be nil
+	if message.Args == nil {
+		return nil, fmt.Errorf("task %s is malformed - args cannot be nil", message.ID)
+	}
+
 	// get task
 	task := w.GetTask(message.Task)
 	if task == nil {

@@ -169,6 +169,9 @@ func DecodeTaskMessage(encodedBody string) (*TaskMessage, error) {
 
 // Encode returns base64 json encoded string
 func (tm *TaskMessage) Encode() (string, error) {
+	if tm.Args == nil {
+		tm.Args = make([]interface{}, 0)
+	}
 	jsonData, err := json.Marshal(tm)
 	if err != nil {
 		return "", err
