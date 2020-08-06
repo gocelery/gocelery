@@ -112,31 +112,43 @@ func (b *AMQPCeleryBroker) StartConsumingChannel() error {
 // SendCeleryMessage sends CeleryMessage to broker
 func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	taskMessage := message.GetTaskMessage()
-	queueName := "celery"
+	queueName := b.Queue.Name
 	_, err := b.QueueDeclare(
-		queueName, // name
-		true,      // durable
-		false,     // autoDelete
-		false,     // exclusive
-		false,     // noWait
-		nil,       // args
+		b.Queue.Name,       // name
+		b.Queue.Durable,    // durable
+		b.Queue.AutoDelete, // autoDelete
+		false,              // exclusive
+		false,              // noWait
+		nil,                // args
 	)
 	if err != nil {
 		return err
 	}
 	err = b.ExchangeDeclare(
-		"default",
-		"direct",
-		true,
-		true,
-		false,
-		false,
-		nil,
+		b.Exchange.Name,       // name
+		b.Exchange.Type,       // kind
+		b.Exchange.Durable,    // durable
+		b.Exchange.AutoDelete, // autoDelete
+		false,                 // internal
+		false,                 // noWait
+		nil,                   // args
 	)
 	if err != nil {
 		return err
 	}
-
+	// QueueBind binds an exchange to a queue so that publishings to the exchange will be routed
+	// to the queue when the publishing routing key matches the binding routing key.
+	// QueueBind is idempotent in behaviour
+	err = b.QueueBind(
+		queueName,       // queue
+		queueName,       // binding routing key
+		b.Exchange.Name, // exchange
+		false,           // noWait
+		nil,             // args
+	)
+	if err != nil {
+		return err
+	}
 	resBytes, err := json.Marshal(taskMessage)
 	if err != nil {
 		return err
@@ -150,11 +162,11 @@ func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	}
 
 	return b.Publish(
-		"",
-		queueName,
-		false,
-		false,
-		publishMessage,
+		b.Exchange.Name, // exchange
+		queueName,       // routing key
+		false,           // mandatory
+		false,           // immediate
+		publishMessage,  // Publishing msg
 	)
 }
 
