@@ -55,6 +55,7 @@ func TestBrokerRedisV2Send(t *testing.T) {
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+		defer cancel()
 		arr, err := tc.broker.BRPop(ctx, time.Second, tc.broker.QueueName).Result()
 		if err != nil || len(arr) < 0 {
 			t.Errorf("test '%s': failed to get celery message from broker: %v", tc.name, err)
@@ -77,8 +78,6 @@ func TestBrokerRedisV2Send(t *testing.T) {
 		if !reflect.DeepEqual(celeryMessage, &message) {
 			t.Errorf("test '%s': received message %v different from original message %v", tc.name, &message, celeryMessage)
 		}
-
-		cancel()
 		releaseCeleryMessage(celeryMessage)
 	}
 }
@@ -111,6 +110,7 @@ func TestBrokerRedisSend(t *testing.T) {
 			continue
 		}
 		conn := tc.broker.Get()
+		defer conn.Close()
 		messageJSON, err := conn.Do("BRPOP", tc.broker.QueueName, "1")
 		if err != nil || messageJSON == nil {
 			t.Errorf("test '%s': failed to get celery message from broker: %v", tc.name, err)
@@ -132,7 +132,6 @@ func TestBrokerRedisSend(t *testing.T) {
 		if !reflect.DeepEqual(celeryMessage, &message) {
 			t.Errorf("test '%s': received message %v different from original message %v", tc.name, &message, celeryMessage)
 		}
-		conn.Close()
 		releaseCeleryMessage(celeryMessage)
 	}
 }
@@ -165,6 +164,7 @@ func TestBrokerRedisGet(t *testing.T) {
 			continue
 		}
 		conn := tc.broker.Get()
+		defer conn.Close()
 		_, err = conn.Do("LPUSH", tc.broker.QueueName, jsonBytes)
 		if err != nil {
 			t.Errorf("test '%s': failed to push celery message to redis: %v", tc.name, err)
@@ -180,7 +180,6 @@ func TestBrokerRedisGet(t *testing.T) {
 		if !reflect.DeepEqual(message, celeryMessage) {
 			t.Errorf("test '%s': received message %v different from original message %v", tc.name, message, celeryMessage)
 		}
-		conn.Close()
 		releaseCeleryMessage(celeryMessage)
 	}
 }
@@ -216,6 +215,7 @@ func TestBrokerRedisV2Get(t *testing.T) {
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+		defer cancel()
 		_, err = tc.broker.LPush(ctx, tc.broker.QueueName, jsonBytes).Result()
 		if err != nil {
 			t.Errorf("test '%s': failed to push celery message to redis: %v", tc.name, err)
@@ -232,8 +232,6 @@ func TestBrokerRedisV2Get(t *testing.T) {
 		if !reflect.DeepEqual(message, celeryMessage) {
 			t.Errorf("test '%s': received message %v different from original message %v", tc.name, message, celeryMessage)
 		}
-
-		cancel()
 		releaseCeleryMessage(celeryMessage)
 	}
 }

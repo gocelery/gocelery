@@ -30,23 +30,15 @@ var (
 	}
 
 	redisConn = redisV2.NewClient(&redisV2.Options{
-		Addr:     "127.0.0.1:6379",
-		Password: "123456",
+		Addr:     "localhost:6379",
+		Password: "",
 		DB:       0,
 	})
 
 	redisClusterConn = redisV2.NewClusterClient(&redisV2.ClusterOptions{
-		Addrs:    []string{"127.0.0.1:6379",},
-		Password: "123456",
+		Addrs:    []string{":5000", ":5001", "5002", "5003", "5004", "5005"},
+		Password: "",
 	})
-
-	// test case
-	//redisBroker = &RedisCeleryBroker{}
-	//redisBrokerWithConn = &RedisCeleryBroker{}
-	//redisBackend = &RedisCeleryBackend{}
-	//redisBackendWithConn = &RedisCeleryBackend{}
-	//amqpBroker = &AMQPCeleryBroker{}
-	//amqpBackend = &AMQPCeleryBackend{}
 
 	redisBroker          = NewRedisCeleryBroker("redis://")
 	redisBrokerWithConn  = NewRedisBroker(redisPool)

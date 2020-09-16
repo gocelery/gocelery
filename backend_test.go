@@ -45,6 +45,7 @@ func TestBackendRedisV2GetResult(t *testing.T) {
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+		defer cancel()
 		_, err = tc.backend.Set(ctx, fmt.Sprintf("celery-task-meta-%s", taskID), messageBytes, 86400).Result()
 		if err != nil {
 			t.Errorf("test '%s': error setting result message to celery: %v", tc.name, err)
@@ -61,8 +62,6 @@ func TestBackendRedisV2GetResult(t *testing.T) {
 		if !reflect.DeepEqual(res, resultMessage) {
 			t.Errorf("test '%s': result message received %v is different from original %v", tc.name, res, resultMessage)
 		}
-
-		cancel()
 		releaseResultMessage(resultMessage)
 	}
 }
@@ -94,6 +93,7 @@ func TestBackendRedisGetResult(t *testing.T) {
 			continue
 		}
 		conn := tc.backend.Get()
+		defer conn.Close()
 		_, err = conn.Do("SETEX", fmt.Sprintf("celery-task-meta-%s", taskID), 86400, messageBytes)
 		if err != nil {
 			t.Errorf("test '%s': error setting result message to celery: %v", tc.name, err)
@@ -109,7 +109,6 @@ func TestBackendRedisGetResult(t *testing.T) {
 		if !reflect.DeepEqual(res, resultMessage) {
 			t.Errorf("test '%s': result message received %v is different from original %v", tc.name, res, resultMessage)
 		}
-		conn.Close()
 		releaseResultMessage(resultMessage)
 	}
 }
@@ -142,6 +141,7 @@ func TestBackendRedisV2SetResult(t *testing.T) {
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+		defer cancel()
 		val, err := tc.backend.Get(ctx, fmt.Sprintf("celery-task-meta-%s", taskID)).Result()
 		if err != nil {
 			t.Errorf("test '%s': error getting data from redis: %v", tc.name, err)
@@ -166,8 +166,6 @@ func TestBackendRedisV2SetResult(t *testing.T) {
 		if !reflect.DeepEqual(&res, resultMessage) {
 			t.Errorf("test '%s': result message received %v is different from original %v", tc.name, &res, resultMessage)
 		}
-
-		cancel()
 		releaseResultMessage(resultMessage)
 	}
 }
@@ -198,6 +196,7 @@ func TestBackendRedisSetResult(t *testing.T) {
 			continue
 		}
 		conn := tc.backend.Get()
+		defer conn.Close()
 		val, err := conn.Do("GET", fmt.Sprintf("celery-task-meta-%s", taskID))
 		if err != nil {
 			t.Errorf("test '%s': error getting data from redis: %v", tc.name, err)
@@ -219,7 +218,6 @@ func TestBackendRedisSetResult(t *testing.T) {
 		if !reflect.DeepEqual(&res, resultMessage) {
 			t.Errorf("test '%s': result message received %v is different from original %v", tc.name, &res, resultMessage)
 		}
-		conn.Close()
 		releaseResultMessage(resultMessage)
 	}
 }
