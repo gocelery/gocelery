@@ -29,6 +29,8 @@ type CeleryBackend interface {
 	SetResult(taskID string, result *ResultMessage) error
 }
 
+const defaultQueueName = "celery"
+
 // NewCeleryClient creates new celery client
 func NewCeleryClient(broker CeleryBroker, backend CeleryBackend, numWorkers int) (*CeleryClient, error) {
 	return &CeleryClient{

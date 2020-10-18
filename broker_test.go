@@ -37,6 +37,10 @@ func TestBrokerRedisSend(t *testing.T) {
 			name:   "send task to redis broker with connection",
 			broker: redisBrokerWithConn,
 		},
+		{
+			name:   "send task to redis broker with queue name",
+			broker: redisBrokerWithQueue,
+		},
 	}
 	for _, tc := range testCases {
 		celeryMessage, err := makeCeleryMessage()
@@ -59,7 +63,7 @@ func TestBrokerRedisSend(t *testing.T) {
 			continue
 		}
 		messageList := messageJSON.([]interface{})
-		if string(messageList[0].([]byte)) != "celery" {
+		if string(messageList[0].([]byte)) != tc.broker.QueueName {
 			t.Errorf("test '%s': non celery message received", tc.name)
 			releaseCeleryMessage(celeryMessage)
 			continue
@@ -90,6 +94,10 @@ func TestBrokerRedisGet(t *testing.T) {
 		{
 			name:   "get task from redis broker with connection",
 			broker: redisBrokerWithConn,
+		},
+		{
+			name:   "send task to redis broker with queue name",
+			broker: redisBrokerWithQueue,
 		},
 	}
 	for _, tc := range testCases {
@@ -140,8 +148,16 @@ func TestBrokerSendGet(t *testing.T) {
 			broker: redisBrokerWithConn,
 		},
 		{
+			name:   "send task to redis broker with queue name",
+			broker: redisBrokerWithQueue,
+		},
+		{
 			name:   "send/get task for amqp broker",
 			broker: amqpBroker,
+		},
+		{
+			name:   "send/get task for amqp broker with queue name",
+			broker: amqpBrokerWithQueue,
 		},
 	}
 	for _, tc := range testCases {

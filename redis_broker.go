@@ -22,7 +22,15 @@ type RedisCeleryBroker struct {
 func NewRedisBroker(conn *redis.Pool) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
 		Pool:      conn,
-		QueueName: "celery",
+		QueueName: defaultQueueName,
+	}
+}
+
+// NewRedisBrokerWithQueueName creates new RedisCeleryBroker with given redis connection pool and queue name
+func NewRedisBrokerWithQueueName(conn *redis.Pool, queueName string) *RedisCeleryBroker {
+	return &RedisCeleryBroker{
+		Pool:      conn,
+		QueueName: queueName,
 	}
 }
 
@@ -33,7 +41,7 @@ func NewRedisBroker(conn *redis.Pool) *RedisCeleryBroker {
 func NewRedisCeleryBroker(uri string) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
 		Pool:      NewRedisPool(uri),
-		QueueName: "celery",
+		QueueName: defaultQueueName,
 	}
 }
 
@@ -64,7 +72,7 @@ func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 		return nil, fmt.Errorf("null message received from redis")
 	}
 	messageList := messageJSON.([]interface{})
-	if string(messageList[0].([]byte)) != "celery" {
+	if string(messageList[0].([]byte)) != cb.QueueName {
 		return nil, fmt.Errorf("not a celery message: %v", messageList[0])
 	}
 	var message CeleryMessage

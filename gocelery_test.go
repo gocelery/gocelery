@@ -29,9 +29,11 @@ var (
 	}
 	redisBroker          = NewRedisCeleryBroker("redis://")
 	redisBrokerWithConn  = NewRedisBroker(redisPool)
+	redisBrokerWithQueue = NewRedisBrokerWithQueueName(redisPool, "test-queue")
 	redisBackend         = NewRedisCeleryBackend("redis://")
 	redisBackendWithConn = NewRedisBackend(redisPool)
 	amqpBroker           = NewAMQPCeleryBroker("amqp://")
+	amqpBrokerWithQueue  = NewAMQPCeleryBrokerWithQueueName("amqp://", "test-queue")
 	amqpBackend          = NewAMQPCeleryBackend("amqp://")
 )
 
