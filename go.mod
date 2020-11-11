@@ -3,6 +3,7 @@ module github.com/gocelery/gocelery
 go 1.13
 
 require (
+	github.com/go-redis/redis/v8 v8.0.0
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/kr/text v0.2.0 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect

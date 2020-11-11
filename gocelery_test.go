@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	redisV2 "github.com/go-redis/redis/v8"
 	"github.com/gomodule/redigo/redis"
 	uuid "github.com/satori/go.uuid"
 )
@@ -27,12 +28,29 @@ var (
 			return c, err
 		},
 	}
+
+	redisConn = redisV2.NewClient(&redisV2.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	redisClusterConn = redisV2.NewClusterClient(&redisV2.ClusterOptions{
+		Addrs:    []string{":5000", ":5001", "5002", "5003", "5004", "5005"},
+		Password: "",
+	})
+
 	redisBroker          = NewRedisCeleryBroker("redis://")
 	redisBrokerWithConn  = NewRedisBroker(redisPool)
 	redisBackend         = NewRedisCeleryBackend("redis://")
 	redisBackendWithConn = NewRedisBackend(redisPool)
 	amqpBroker           = NewAMQPCeleryBroker("amqp://")
 	amqpBackend          = NewAMQPCeleryBackend("amqp://")
+
+	redisBrokerV2         = NewRedisBrokerV2(redisConn)
+	redisBrokerV2Cluster  = NewRedisBrokerV2(redisClusterConn)
+	redisBackendV2        = NewRedisBackendV2(redisConn)
+	redisBackendV2Cluster = NewRedisBackendV2(redisClusterConn)
 )
 
 // TestNoArg tests successful function execution

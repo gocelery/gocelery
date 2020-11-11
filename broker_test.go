@@ -5,6 +5,7 @@
 package gocelery
 
 import (
+	"context"
 	"encoding/json"
 	"math/rand"
 	"reflect"
@@ -21,6 +22,64 @@ func makeCeleryMessage() (*CeleryMessage, error) {
 		return nil, err
 	}
 	return getCeleryMessage(encodedTaskMessage), nil
+}
+
+// stand-alone/cluster redis broker send
+func TestBrokerRedisV2Send(t *testing.T) {
+	testCases := []struct {
+		name   string
+		broker *RedisCeleryBrokerV2
+	}{
+		{
+			name:   "send task to redis stand-alone broker",
+			broker: redisBrokerV2,
+		},
+		{
+			name: "send task to redis cluster broker",
+			broker: redisBrokerV2Cluster,
+		},
+	}
+
+	for _, tc := range testCases {
+		celeryMessage, err := makeCeleryMessage()
+		if err != nil || celeryMessage == nil {
+			t.Errorf("test '%s': failed to construct celery message: %v", tc.name, err)
+			continue
+		}
+
+		err = tc.broker.SendCeleryMessage(celeryMessage)
+		if err != nil {
+			t.Errorf("test '%s': failed to send celery message to broker: %v", tc.name, err)
+			releaseCeleryMessage(celeryMessage)
+			continue
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+		defer cancel()
+		arr, err := tc.broker.BRPop(ctx, time.Second, tc.broker.QueueName).Result()
+		if err != nil || len(arr) < 0 {
+			t.Errorf("test '%s': failed to get celery message from broker: %v", tc.name, err)
+			releaseCeleryMessage(celeryMessage)
+			continue
+		}
+
+		if arr[0] != "celery" {
+			t.Errorf("test '%s': non celery message received", tc.name)
+			releaseCeleryMessage(celeryMessage)
+			continue
+		}
+
+		var message CeleryMessage
+		if err := json.Unmarshal([]byte(arr[1]), &message); err != nil {
+			t.Errorf("test '%s': failed to unmarshal received message: %v", tc.name, err)
+			releaseCeleryMessage(celeryMessage)
+			continue
+		}
+		if !reflect.DeepEqual(celeryMessage, &message) {
+			t.Errorf("test '%s': received message %v different from original message %v", tc.name, &message, celeryMessage)
+		}
+		releaseCeleryMessage(celeryMessage)
+	}
 }
 
 // TestBrokerRedisSend is Redis specific test that sets CeleryMessage to queue
@@ -112,6 +171,58 @@ func TestBrokerRedisGet(t *testing.T) {
 			releaseCeleryMessage(celeryMessage)
 			continue
 		}
+		message, err := tc.broker.GetCeleryMessage()
+		if err != nil {
+			t.Errorf("test '%s': failed to get celery message from broker: %v", tc.name, err)
+			releaseCeleryMessage(celeryMessage)
+			continue
+		}
+		if !reflect.DeepEqual(message, celeryMessage) {
+			t.Errorf("test '%s': received message %v different from original message %v", tc.name, message, celeryMessage)
+		}
+		releaseCeleryMessage(celeryMessage)
+	}
+}
+
+// stand-alone/cluster redis broker get
+func TestBrokerRedisV2Get(t *testing.T) {
+	testCases := []struct {
+		name   string
+		broker *RedisCeleryBrokerV2
+	}{
+		{
+			name:   "send task to redis stand-alone broker",
+			broker: redisBrokerV2,
+		},
+		{
+			name: "send task to redis cluster broker",
+			broker: redisBrokerV2Cluster,
+		},
+	}
+
+	for _, tc := range testCases {
+		celeryMessage, err := makeCeleryMessage()
+		if err != nil || celeryMessage == nil {
+			t.Errorf("test '%s': failed to construct celery message: %v", tc.name, err)
+			continue
+		}
+
+		jsonBytes, err := json.Marshal(celeryMessage)
+		if err != nil {
+			t.Errorf("test '%s': failed to marshal celery message: %v", tc.name, err)
+			releaseCeleryMessage(celeryMessage)
+			continue
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second * 5)
+		defer cancel()
+		_, err = tc.broker.LPush(ctx, tc.broker.QueueName, jsonBytes).Result()
+		if err != nil {
+			t.Errorf("test '%s': failed to push celery message to redis: %v", tc.name, err)
+			releaseCeleryMessage(celeryMessage)
+			continue
+		}
+
 		message, err := tc.broker.GetCeleryMessage()
 		if err != nil {
 			t.Errorf("test '%s': failed to get celery message from broker: %v", tc.name, err)
