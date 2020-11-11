@@ -662,7 +662,6 @@ func TestFloatNamedArguments(t *testing.T) {
 // Bug(sickyoon): float32 as an argument throws a panic
 // https://github.com/gocelery/gocelery/issues/75
 func TestFloat32(t *testing.T) {
-	t.Skip("Bug(sickyoon): float32 as an argument throws a panic: https://github.com/gocelery/gocelery/issues/75")
 	testCases := []struct {
 		name     string
 		broker   CeleryBroker
@@ -732,7 +731,6 @@ func TestFloat32(t *testing.T) {
 // Bug(sickyoon): float32 as an argument throws a panic
 // https://github.com/gocelery/gocelery/issues/75
 func TestFloat32NamedArguments(t *testing.T) {
-	t.Skip("Bug(sickyoon): float32 as an argument throws a panic: https://github.com/gocelery/gocelery/issues/75")
 	testCases := []struct {
 		name     string
 		broker   CeleryBroker
@@ -1328,18 +1326,20 @@ func (a *addFloat32Task) ParseKwargs(kwargs map[string]interface{}) error {
 	if !ok {
 		return fmt.Errorf("undefined kwarg a")
 	}
-	a.a, ok = kwargA.(float32)
+	kwargAFloat, ok := kwargA.(float64)
 	if !ok {
 		return fmt.Errorf("malformed kwarg a")
 	}
+	a.a = float32(kwargAFloat)
 	kwargB, ok := kwargs["b"]
 	if !ok {
 		return fmt.Errorf("undefined kwarg b")
 	}
-	a.b, ok = kwargB.(float32)
+	kwargBFloat, ok := kwargB.(float64)
 	if !ok {
 		return fmt.Errorf("malformed kwarg b")
 	}
+	a.b = float32(kwargBFloat)
 	return nil
 }
 
