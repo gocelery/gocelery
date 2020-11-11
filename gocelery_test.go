@@ -946,7 +946,6 @@ func TestBoolNamedArguments(t *testing.T) {
 // TestArrayIntNamedArguments tests successful function execution
 // with array arguments and integer return value
 func TestArrayIntNamedArguments(t *testing.T) {
-	t.Skip("Bug(sickyoon): array as an argument returns nil: https://github.com/gocelery/gocelery/issues/74")
 	testCases := []struct {
 		name     string
 		broker   CeleryBroker
@@ -1020,7 +1019,6 @@ func TestArrayIntNamedArguments(t *testing.T) {
 // TestArray tests successful function execution
 // with array arguments and return value
 func TestArray(t *testing.T) {
-	t.Skip("Bug(sickyoon): array as an argument returns nil: https://github.com/gocelery/gocelery/issues/74")
 	testCases := []struct {
 		name     string
 		broker   CeleryBroker
@@ -1078,7 +1076,7 @@ func TestArray(t *testing.T) {
 			cli.StopWorker()
 			continue
 		}
-		if !reflect.DeepEqual(tc.expected, res.([]string)) {
+		if !reflect.DeepEqual(tc.expected, convertInterfaceToStringSlice(res)) {
 			t.Errorf("test '%s': returned result %+v is different from expected result %+v", tc.name, res, tc.expected)
 		}
 		cli.StopWorker()
@@ -1088,7 +1086,6 @@ func TestArray(t *testing.T) {
 // TestMap tests successful function execution
 // with map arguments and return value
 func TestMap(t *testing.T) {
-	t.Skip("Bug(sickyoon): map as an argument returns nil: https://github.com/gocelery/gocelery/issues/74")
 	testCases := []struct {
 		name     string
 		broker   CeleryBroker
@@ -1146,7 +1143,7 @@ func TestMap(t *testing.T) {
 			cli.StopWorker()
 			continue
 		}
-		if !reflect.DeepEqual(tc.expected, res.(map[string]string)) {
+		if !reflect.DeepEqual(tc.expected, convertInterfaceToStringMap(res)) {
 			t.Errorf("test '%s': returned result %+v is different from expected result %+v", tc.name, res, tc.expected)
 		}
 		cli.StopWorker()
@@ -1398,18 +1395,12 @@ func (m *maxArrLenTask) ParseKwargs(kwargs map[string]interface{}) error {
 	if !ok {
 		return fmt.Errorf("undefined kwarg a")
 	}
-	m.a, ok = kwargA.([]string)
-	if !ok {
-		return fmt.Errorf("malformed kwarg a")
-	}
+	m.a = convertInterfaceToStringSlice(kwargA)
 	kwargB, ok := kwargs["b"]
 	if !ok {
 		return fmt.Errorf("undefined kwarg b")
 	}
-	m.b, ok = kwargB.([]string)
-	if !ok {
-		return fmt.Errorf("malformed kwarg b")
-	}
+	m.b = convertInterfaceToStringSlice(kwargB)
 	return nil
 }
 
@@ -1436,4 +1427,22 @@ func addMap(a, b map[string]interface{}) map[string]interface{} {
 		c[k] = v
 	}
 	return c
+}
+
+func convertInterfaceToStringSlice(i interface{}) []string {
+	is := i.([]interface{})
+	stringSlice := make([]string, len(is))
+	for i, v := range is {
+		stringSlice[i] = fmt.Sprint(v)
+	}
+	return stringSlice
+}
+
+func convertInterfaceToStringMap(i interface{}) map[string]string {
+	im := i.(map[string]interface{})
+	stringMap := make(map[string]string, len(im))
+	for i, v := range im {
+		stringMap[i] = fmt.Sprint(v)
+	}
+	return stringMap
 }
