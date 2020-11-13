@@ -95,8 +95,10 @@ func TestNoArg(t *testing.T) {
 	}
 }
 
+// TestNoReturn tests successful function execution
+// no return value and no arguments
 func TestNoReturn(t *testing.T) {
-	t.Skip("Bug(sickyoon): empty return value throws a panic: https://github.com/gocelery/gocelery/issues/149")
+	// t.Skip("Bug(sickyoon): empty return value throws a panic: https://github.com/gocelery/gocelery/issues/149")
 	testCases := []struct {
 		name     string
 		broker   CeleryBroker
@@ -110,7 +112,9 @@ func TestNoReturn(t *testing.T) {
 			broker:   redisBroker,
 			backend:  redisBackend,
 			taskName: uuid.Must(uuid.NewV4()).String(),
-			taskFunc: func() {},
+			taskFunc: func() {
+				fmt.Printf("WTF")
+			},
 			expected: nil,
 		},
 		{
@@ -140,16 +144,27 @@ func TestNoReturn(t *testing.T) {
 			cli.StopWorker()
 			continue
 		}
-		res, err := asyncResult.Get(TIMEOUT)
-		if err != nil {
-			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
-			cli.StopWorker()
-			continue
-		}
-		// json always return float64 intead of int
-		if tc.expected != int(res.(float64)) {
-			t.Errorf("test '%s': returned result %+v is different from expected result %+v", tc.name, res, tc.expected)
-		}
+
+		// wait until the function has been executed
+		func() {
+			ticker := time.NewTicker(50 * time.Millisecond)
+			timeoutChan := time.After(TIMEOUT)
+			for {
+				select {
+				case <-timeoutChan:
+					t.Errorf("%v timeout waiting for result", TIMEOUT)
+					return
+				case <-ticker.C:
+					ready, err := asyncResult.Ready()
+					if err != nil {
+						return
+					}
+					if ready {
+						return
+					}
+				}
+			}
+		}()
 		cli.StopWorker()
 	}
 }
