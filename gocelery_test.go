@@ -95,6 +95,65 @@ func TestNoArg(t *testing.T) {
 	}
 }
 
+func TestNoReturn(t *testing.T) {
+	t.Skip("Bug(sickyoon): empty return value throws a panic: https://github.com/gocelery/gocelery/issues/149")
+	testCases := []struct {
+		name     string
+		broker   CeleryBroker
+		backend  CeleryBackend
+		taskName string
+		taskFunc interface{}
+		expected interface{}
+	}{
+		{
+			name:     "no return value with redis broker/backend ",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: func() {},
+			expected: nil,
+		},
+		{
+			name:     "no return value with redis broker/backend ",
+			broker:   redisBroker,
+			backend:  redisBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: &noReturnTask{},
+			expected: nil,
+		},
+		{
+			name:     "no return value with amqp broker/backend ",
+			broker:   amqpBroker,
+			backend:  amqpBackend,
+			taskName: uuid.Must(uuid.NewV4()).String(),
+			taskFunc: func() {},
+			expected: nil,
+		},
+	}
+	for _, tc := range testCases {
+		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
+		cli.Register(tc.taskName, tc.taskFunc)
+		cli.StartWorker()
+		asyncResult, err := cli.Delay(tc.taskName)
+		if err != nil {
+			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
+			cli.StopWorker()
+			continue
+		}
+		res, err := asyncResult.Get(TIMEOUT)
+		if err != nil {
+			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
+			cli.StopWorker()
+			continue
+		}
+		// json always return float64 intead of int
+		if tc.expected != int(res.(float64)) {
+			t.Errorf("test '%s': returned result %+v is different from expected result %+v", tc.name, res, tc.expected)
+		}
+		cli.StopWorker()
+	}
+}
+
 // TestInteger tests successful function execution
 // with integer arguments and return value
 func TestInteger(t *testing.T) {
@@ -1146,6 +1205,19 @@ func TestMap(t *testing.T) {
 		}
 		cli.StopWorker()
 	}
+}
+
+// noReturnTask accepts no argument and returns nothing
+type noReturnTask struct{}
+
+//// ParseKwargs does nothing for noReturnTask since there are no arguments to process
+func (a noReturnTask) ParseKwargs(kwargs map[string]interface{}) error {
+	return nil
+}
+
+// RunTask executes noReturnTask example by returning nil representing empty value
+func (a *noReturnTask) RunTask() (interface{}, error) {
+	return nil, nil
 }
 
 // noArgTask accepts no function arguments
