@@ -29,7 +29,7 @@ func Example_clientWithNamedArguments() {
 
 	// initialize celery client
 	cli, _ := NewCeleryClient(
-		NewRedisBroker(redisPool),
+		NewRedisBroker(redisPool, "celery"),
 		&RedisCeleryBackend{Pool: redisPool},
 		1,
 	)
