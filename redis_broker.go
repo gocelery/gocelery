@@ -30,10 +30,10 @@ func NewRedisBroker(conn *redis.Pool, QueueName string) *RedisCeleryBroker {
 //
 // Deprecated: NewRedisCeleryBroker exists for historical compatibility
 // and should not be used. Use NewRedisBroker instead to create new RedisCeleryBroker.
-func NewRedisCeleryBroker(uri string) *RedisCeleryBroker {
+func NewRedisCeleryBroker(uri string, QueueName string) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
 		Pool:      NewRedisPool(uri),
-		QueueName: "celery",
+		QueueName: QueueName,
 	}
 }
 

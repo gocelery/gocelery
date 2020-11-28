@@ -27,7 +27,7 @@ var (
 			return c, err
 		},
 	}
-	redisBroker          = NewRedisCeleryBroker("redis://")
+	redisBroker          = NewRedisCeleryBroker("redis://", "celery")
 	redisBrokerWithConn  = NewRedisBroker(redisPool, "celery")
 	redisBackend         = NewRedisCeleryBackend("redis://")
 	redisBackendWithConn = NewRedisBackend(redisPool)
