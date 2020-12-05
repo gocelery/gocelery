@@ -203,11 +203,6 @@ Celery Message Protocol Version 1
 
 Please let us know if you use gocelery in your project!
 
-## Contributing
-
-You are more than welcome to make any contributions.
-Please create Pull Request for any changes.
-
 ## LICENSE
 
 The gocelery is offered under MIT license.
