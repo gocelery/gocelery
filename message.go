@@ -216,6 +216,9 @@ func getReflectionResultMessage(val *reflect.Value) *ResultMessage {
 }
 
 func releaseResultMessage(v *ResultMessage) {
+	if v == nil {
+		return
+	}
 	v.reset()
 	resultMessagePool.Put(v)
 }
