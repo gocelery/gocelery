@@ -11,6 +11,8 @@ import (
 	"reflect"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // CeleryWorker represents distributed task worker
@@ -21,8 +23,10 @@ type CeleryWorker struct {
 	registeredTasks map[string]interface{}
 	taskLock        sync.RWMutex
 	cancel          context.CancelFunc
-	workWG          sync.WaitGroup
+	workWG          *errgroup.Group
 	rateLimitPeriod time.Duration
+	// sem is a semaphore that limits number of workers.
+	sem chan struct{}
 }
 
 // NewCeleryWorker returns new celery worker
@@ -33,6 +37,7 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 		numWorkers:      numWorkers,
 		registeredTasks: map[string]interface{}{},
 		rateLimitPeriod: 100 * time.Millisecond,
+		sem:             make(chan struct{}, numWorkers),
 	}
 }
 
@@ -40,40 +45,64 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 func (w *CeleryWorker) StartWorkerWithContext(ctx context.Context) {
 	var wctx context.Context
 	wctx, w.cancel = context.WithCancel(ctx)
-	w.workWG.Add(w.numWorkers)
-	for i := 0; i < w.numWorkers; i++ {
-		go func(workerID int) {
-			defer w.workWG.Done()
-			ticker := time.NewTicker(w.rateLimitPeriod)
-			for {
-				select {
-				case <-wctx.Done():
-					return
-				case <-ticker.C:
-					// process task request
-					taskMessage, err := w.broker.GetTaskMessage()
-					if err != nil || taskMessage == nil {
-						continue
-					}
+	w.workWG = &errgroup.Group{}
 
-					// run task
-					resultMsg, err := w.RunTask(taskMessage)
-					if err != nil {
-						log.Printf("failed to run task message %s: %+v", taskMessage.ID, err)
-						continue
-					}
-					defer releaseResultMessage(resultMsg)
+	// Tasks polling from the broker with a cooling-off period when an attempt failed.
+	msgs := make(chan *TaskMessage, 1)
+	w.workWG.Go(func() error {
+		defer close(msgs)
 
-					// push result to backend
-					err = w.backend.SetResult(taskMessage.ID, resultMsg)
-					if err != nil {
-						log.Printf("failed to push result: %+v", err)
-						continue
-					}
+		for {
+			select {
+			case <-wctx.Done():
+				return nil
+			default:
+				// process task request
+				taskMessage, err := w.broker.GetTaskMessage()
+				if err != nil || taskMessage == nil {
+					<-time.After(w.rateLimitPeriod)
+					break
 				}
+				msgs <- taskMessage
 			}
-		}(i)
-	}
+		}
+	})
+
+	// Start a worker when there is a task.
+	go func() {
+		for m := range msgs {
+			select {
+			// Acquire a semaphore by sending a token.
+			case w.sem <- struct{}{}:
+			// Stop processing tasks.
+			case <-wctx.Done():
+				return
+			}
+
+			taskMessage := m
+			w.workWG.Go(func() error {
+				// Release a semaphore by discarding a token.
+				defer func() { <-w.sem }()
+
+				// run task
+				resultMsg, err := w.RunTask(taskMessage)
+				if err != nil {
+					log.Printf("failed to run task message %s: %+v", taskMessage.ID, err)
+					return nil
+				}
+				defer releaseResultMessage(resultMsg)
+
+				// push result to backend
+				err = w.backend.SetResult(taskMessage.ID, resultMsg)
+				if err != nil {
+					log.Printf("failed to push result: %+v", err)
+					return nil
+				}
+
+				return nil
+			})
+		}
+	}()
 }
 
 // StartWorker starts celery workers
