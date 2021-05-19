@@ -119,6 +119,7 @@ type AsyncResult struct {
 // It blocks for period of time set by timeout and returns error if unavailable
 func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
 	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
 	timeoutChan := time.After(timeout)
 	for {
 		select {
