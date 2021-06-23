@@ -1,4 +1,4 @@
-module github.com/gocelery/gocelery
+module github.com/yabamuro/gocelery
 
 go 1.13
 
