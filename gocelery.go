@@ -115,6 +115,11 @@ type AsyncResult struct {
 	result  *ResultMessage
 }
 
+// Builds asynchronous result
+func (cc *CeleryClient) GetAsyncResult(taskID string) *AsyncResult {
+	return &AsyncResult{TaskID: taskID, backend: cc.backend}
+}
+
 // Get gets actual result from backend
 // It blocks for period of time set by timeout and returns error if unavailable
 func (ar *AsyncResult) Get(timeout time.Duration) (interface{}, error) {
