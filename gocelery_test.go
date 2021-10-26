@@ -75,7 +75,7 @@ func TestNoArg(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName)
+		asyncResult, err := cli.Delay(tc.taskName, "celery")
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()
@@ -143,7 +143,7 @@ func TestInteger(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName, tc.inA, tc.inB)
+		asyncResult, err := cli.Delay(tc.taskName,"celery", tc.inA, tc.inB)
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()
@@ -213,6 +213,7 @@ func TestIntegerNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
+			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -354,6 +355,7 @@ func TestStringNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
+			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -494,6 +496,7 @@ func TestStringIntegerNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
+			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -565,7 +568,7 @@ func TestFloat(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName, tc.inA, tc.inB)
+		asyncResult, err := cli.Delay(tc.taskName,"celery", tc.inA, tc.inB)
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()
@@ -634,6 +637,7 @@ func TestFloatNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
+			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -707,7 +711,7 @@ func TestFloat32(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName, tc.inA, tc.inB)
+		asyncResult, err := cli.Delay(tc.taskName, "celery", tc.inA, tc.inB)
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()
@@ -778,6 +782,7 @@ func TestFloat32NamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
+			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -849,7 +854,7 @@ func TestBool(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName, tc.inA, tc.inB)
+		asyncResult, err := cli.Delay(tc.taskName,"celery", tc.inA, tc.inB)
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()
@@ -918,6 +923,7 @@ func TestBoolNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
+			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -991,6 +997,7 @@ func TestArrayIntNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
+			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -1062,7 +1069,7 @@ func TestArray(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName, tc.inA, tc.inB)
+		asyncResult, err := cli.Delay(tc.taskName,"celery", tc.inA, tc.inB)
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()
@@ -1129,7 +1136,7 @@ func TestMap(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName, tc.inA, tc.inB)
+		asyncResult, err := cli.Delay(tc.taskName,"celery", tc.inA, tc.inB)
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()

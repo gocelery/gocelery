@@ -39,7 +39,7 @@ func Example_client() {
 	argB := rand.Intn(10)
 
 	// run task
-	asyncResult, err := cli.Delay(taskName, argA, argB)
+	asyncResult, err := cli.Delay(taskName, "celery", argA, argB)
 	if err != nil {
 		panic(err)
 	}

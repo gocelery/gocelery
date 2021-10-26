@@ -44,7 +44,7 @@ func TestBrokerRedisSend(t *testing.T) {
 			t.Errorf("test '%s': failed to construct celery message: %v", tc.name, err)
 			continue
 		}
-		err = tc.broker.SendCeleryMessage(celeryMessage)
+		err = tc.broker.SendCeleryMessage(celeryMessage, "celery")
 		if err != nil {
 			t.Errorf("test '%s': failed to send celery message to broker: %v", tc.name, err)
 			releaseCeleryMessage(celeryMessage)
@@ -150,7 +150,7 @@ func TestBrokerSendGet(t *testing.T) {
 			t.Errorf("test '%s': failed to construct celery message: %v", tc.name, err)
 			continue
 		}
-		err = tc.broker.SendCeleryMessage(celeryMessage)
+		err = tc.broker.SendCeleryMessage(celeryMessage, "celery")
 		if err != nil {
 			t.Errorf("test '%s': failed to send celery message to broker: %v", tc.name, err)
 			releaseCeleryMessage(celeryMessage)
