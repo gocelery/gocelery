@@ -19,7 +19,7 @@ type CeleryClient struct {
 
 // CeleryBroker is interface for celery broker database
 type CeleryBroker interface {
-	SendCeleryMessage(*CeleryMessage, string) error
+	SendCeleryMessage(*CeleryMessage) error
 	GetTaskMessage() (*TaskMessage, error) // must be non-blocking
 }
 
@@ -85,7 +85,7 @@ func (cc *CeleryClient) delay(task *TaskMessage, queueName string) (*AsyncResult
 	}
 	celeryMessage := getCeleryMessage(encodedMessage)
 	defer releaseCeleryMessage(celeryMessage)
-	err = cc.broker.SendCeleryMessage(celeryMessage, queueName)
+	err = cc.broker.SendCeleryMessage(celeryMessage)
 	if err != nil {
 		return nil, err
 	}

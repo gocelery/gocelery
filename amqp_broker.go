@@ -71,17 +71,18 @@ func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
 }
 
 // NewAMQPCeleryBroker creates new AMQPCeleryBroker
-func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
-	return NewAMQPCeleryBrokerByConnAndChannel(NewAMQPConnection(host))
+func NewAMQPCeleryBroker(host string, queueName string) *AMQPCeleryBroker {
+	conn, cha := NewAMQPConnection(host)
+	return NewAMQPCeleryBrokerByConnAndChannel(conn, cha, queueName)
 }
 
 // NewAMQPCeleryBrokerByConnAndChannel creates new AMQPCeleryBroker using AMQP conn and channel
-func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel) *AMQPCeleryBroker {
+func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel, queueName string) *AMQPCeleryBroker {
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
 		Connection: conn,
 		Exchange:   NewAMQPExchange("default"),
-		Queue:      NewAMQPQueue("celery"),
+		Queue:      NewAMQPQueue(queueName),
 		Rate:       4,
 	}
 	if err := broker.CreateExchange(); err != nil {
@@ -110,10 +111,10 @@ func (b *AMQPCeleryBroker) StartConsumingChannel() error {
 }
 
 // SendCeleryMessage sends CeleryMessage to broker
-func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage, queueName string) error {
+func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	taskMessage := message.GetTaskMessage()
 	_, err := b.QueueDeclare(
-		queueName, // name
+		b.Queue.Name, // name
 		true,      // durable
 		false,     // autoDelete
 		false,     // exclusive
@@ -150,7 +151,7 @@ func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage, queueName s
 
 	return b.Publish(
 		"",
-		queueName,
+		b.Queue.Name,
 		false,
 		false,
 		publishMessage,

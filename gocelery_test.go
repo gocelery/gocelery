@@ -28,10 +28,10 @@ var (
 		},
 	}
 	redisBroker          = NewRedisCeleryBroker("redis://")
-	redisBrokerWithConn  = NewRedisBroker(redisPool)
+	redisBrokerWithConn  = NewRedisBroker(redisPool, "celery")
 	redisBackend         = NewRedisCeleryBackend("redis://")
 	redisBackendWithConn = NewRedisBackend(redisPool)
-	amqpBroker           = NewAMQPCeleryBroker("amqp://")
+	amqpBroker           = NewAMQPCeleryBroker("amqp://", "celery")
 	amqpBackend          = NewAMQPCeleryBackend("amqp://")
 )
 
