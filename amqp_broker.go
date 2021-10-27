@@ -111,8 +111,11 @@ func (b *AMQPCeleryBroker) StartConsumingChannel() error {
 }
 
 // SendCeleryMessage sends CeleryMessage to broker
-func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
+func (b *AMQPCeleryBroker) SendCeleryMessage(message *CeleryMessage, queuename ...string) error {
 	taskMessage := message.GetTaskMessage()
+	if len(queuename) >= 1{
+		b.Queue.Name = queuename[0]
+	}
 	_, err := b.QueueDeclare(
 		b.Queue.Name, // name
 		true,      // durable
