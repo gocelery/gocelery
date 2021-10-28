@@ -29,7 +29,7 @@ func Example_clientWithNamedArguments() {
 
 	// initialize celery client
 	cli, _ := NewCeleryClient(
-		NewRedisBroker(redisPool),
+		NewRedisBroker(redisPool, "celery"),
 		&RedisCeleryBackend{Pool: redisPool},
 		1,
 	)
@@ -42,6 +42,7 @@ func Example_clientWithNamedArguments() {
 	// run task
 	asyncResult, err := cli.DelayKwargs(
 		taskName,
+		"celery",
 		map[string]interface{}{
 			"a": argA,
 			"b": argB,
