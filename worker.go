@@ -138,14 +138,15 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) (*ResultMessage, error) {
 	// convert to task interface
 	taskInterface, ok := task.(CeleryTask)
 	if ok {
-		if err := taskInterface.ParseKwargs(message.Kwargs); err != nil {
-			return nil, err
-		}
-		val, err := taskInterface.RunTask()
+		input, err := taskInterface.ParseKwargs(message.Kwargs)
 		if err != nil {
 			return nil, err
 		}
-		return getResultMessage(val), err
+		output, err := taskInterface.RunTask(input)
+		if err != nil {
+			return nil, err
+		}
+		return getResultMessage(output), nil
 	}
 
 	// use reflection to execute function ptr

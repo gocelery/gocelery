@@ -64,20 +64,20 @@ func (cc *CeleryClient) WaitForStopWorker() {
 }
 
 // Delay gets asynchronous result
-func (cc *CeleryClient) Delay(task string, queueName string, args ...interface{}) (*AsyncResult, error) {
+func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, error) {
 	celeryTask := getTaskMessage(task)
 	celeryTask.Args = args
-	return cc.delay(celeryTask, queueName)
+	return cc.delay(celeryTask)
 }
 
 // DelayKwargs gets asynchronous results with argument map
-func (cc *CeleryClient) DelayKwargs(task string, queueName string,  args map[string]interface{}) (*AsyncResult, error) {
+func (cc *CeleryClient) DelayKwargs(task string, args map[string]interface{}) (*AsyncResult, error) {
 	celeryTask := getTaskMessage(task)
 	celeryTask.Kwargs = args
-	return cc.delay(celeryTask, queueName)
+	return cc.delay(celeryTask)
 }
 
-func (cc *CeleryClient) delay(task *TaskMessage, queueName string) (*AsyncResult, error) {
+func (cc *CeleryClient) delay(task *TaskMessage) (*AsyncResult, error) {
 	defer releaseTaskMessage(task)
 	encodedMessage, err := task.Encode()
 	if err != nil {
@@ -97,15 +97,14 @@ func (cc *CeleryClient) delay(task *TaskMessage, queueName string) (*AsyncResult
 
 // CeleryTask is an interface that represents actual task
 // Passing CeleryTask interface instead of function pointer
-// avoids reflection and may have performance gain.
+// avoids reflection and may have performance gain. Any fields on
+// instances of this struct will NOT be thread-safe.
 // ResultMessage must be obtained using GetResultMessage()
 type CeleryTask interface {
-
-	// ParseKwargs - define a method to parse kwargs
-	ParseKwargs(map[string]interface{}) error
-
-	// RunTask - define a method for execution
-	RunTask() (interface{}, error)
+	//ParseKwargs converts kwargs to an input to be passed to RunTask
+	ParseKwargs(map[string]interface{}) (interface{}, error)
+	//RunTask takes the output of ParsKwargs and returns the task's output
+	RunTask(interface{}) (interface{}, error)
 }
 
 // AsyncResult represents pending result

@@ -143,7 +143,7 @@ func TestInteger(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName,"celery", tc.inA, tc.inB)
+		asyncResult, err := cli.Delay(tc.taskName, "celery", tc.inA, tc.inB)
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()
@@ -213,7 +213,6 @@ func TestIntegerNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
-			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -355,7 +354,6 @@ func TestStringNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
-			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -496,7 +494,6 @@ func TestStringIntegerNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
-			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -568,7 +565,7 @@ func TestFloat(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName,"celery", tc.inA, tc.inB)
+		asyncResult, err := cli.Delay(tc.taskName, "celery", tc.inA, tc.inB)
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()
@@ -637,7 +634,6 @@ func TestFloatNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
-			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -782,7 +778,6 @@ func TestFloat32NamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
-			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -854,7 +849,7 @@ func TestBool(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName,"celery", tc.inA, tc.inB)
+		asyncResult, err := cli.Delay(tc.taskName, "celery", tc.inA, tc.inB)
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()
@@ -923,7 +918,6 @@ func TestBoolNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
-			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -997,7 +991,6 @@ func TestArrayIntNamedArguments(t *testing.T) {
 		cli.StartWorker()
 		asyncResult, err := cli.DelayKwargs(
 			tc.taskName,
-			"celery",
 			map[string]interface{}{
 				"a": tc.inA,
 				"b": tc.inB,
@@ -1069,7 +1062,7 @@ func TestArray(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName,"celery", tc.inA, tc.inB)
+		asyncResult, err := cli.Delay(tc.taskName, "celery", tc.inA, tc.inB)
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()
@@ -1136,7 +1129,7 @@ func TestMap(t *testing.T) {
 		cli, _ := NewCeleryClient(tc.broker, tc.backend, 1)
 		cli.Register(tc.taskName, tc.taskFunc)
 		cli.StartWorker()
-		asyncResult, err := cli.Delay(tc.taskName,"celery", tc.inA, tc.inB)
+		asyncResult, err := cli.Delay(tc.taskName, "celery", tc.inA, tc.inB)
 		if err != nil {
 			t.Errorf("test '%s': failed to get result for task %s: %+v", tc.name, tc.taskName, err)
 			cli.StopWorker()
@@ -1158,13 +1151,8 @@ func TestMap(t *testing.T) {
 // noArgTask accepts no function arguments
 type noArgTask struct{}
 
-// ParseKwargs does nothing for noArgTask since there are no arguments to process
-func (a *noArgTask) ParseKwargs(kwargs map[string]interface{}) error {
-	return nil
-}
-
 // RunTask executes noArgTask example by returning hard-coded integer value 1
-func (a *noArgTask) RunTask() (interface{}, error) {
+func (a *noArgTask) ParseKwargs(kwargs map[string]interface{}) (interface{}, error) {
 	return 1, nil
 }
 

@@ -15,35 +15,48 @@ import (
 // exampleAddTask is integer addition task
 // with named arguments
 type exampleAddTask struct {
+}
+
+type vals struct {
 	a int
 	b int
 }
 
-func (a *exampleAddTask) ParseKwargs(kwargs map[string]interface{}) error {
+func (_ *exampleAddTask) ParseKwargs(kwargs map[string]interface{}) (interface{}, error) {
 	kwargA, ok := kwargs["a"]
 	if !ok {
-		return fmt.Errorf("undefined kwarg a")
+		return nil, fmt.Errorf("undefined kwarg a")
 	}
 	kwargAFloat, ok := kwargA.(float64)
 	if !ok {
-		return fmt.Errorf("malformed kwarg a")
+		return nil, fmt.Errorf("malformed kwarg a")
 	}
-	a.a = int(kwargAFloat)
+	a := int(kwargAFloat)
 	kwargB, ok := kwargs["b"]
 	if !ok {
-		return fmt.Errorf("undefined kwarg b")
+		return nil, fmt.Errorf("undefined kwarg b")
 	}
 	kwargBFloat, ok := kwargB.(float64)
 	if !ok {
-		return fmt.Errorf("malformed kwarg b")
+		return nil, fmt.Errorf("malformed kwarg b")
 	}
-	a.b = int(kwargBFloat)
-	return nil
+	b := int(kwargBFloat)
+	result := a + b
+	fmt.Printf("kwarg-worker got a=%d, b=%d, with result=%d", a, b, result)
+	return &vals{a, b}, nil
 }
 
-func (a *exampleAddTask) RunTask() (interface{}, error) {
-	result := a.a + a.b
+func (_ *exampleAddTask) RunTask(arg interface{}) (interface{}, error) {
+	v := arg.(*vals)
+	result := v.a + v.b
+	fmt.Printf("kwarg-worker got a=%d, b=%d, with result=%d", v.a, v.b, result)
 	return result, nil
+}
+
+func Add(a, b int) int {
+	result := a + b
+	fmt.Printf("reflect-worker got a=%d, b=%d, with result=%d", a, b, result)
+	return result
 }
 
 func main() {
@@ -68,13 +81,14 @@ func main() {
 
 	// initialize celery client
 	cli, _ := gocelery.NewCeleryClient(
-		gocelery.NewRedisBroker(redisPool),
+		gocelery.NewRedisBroker(redisPool, "celery"),
 		&gocelery.RedisCeleryBackend{Pool: redisPool},
 		5, // number of workers
 	)
 
 	// register task
-	cli.Register("worker.add_reflect", &exampleAddTask{})
+	cli.Register("worker.add", &exampleAddTask{})
+	cli.Register("worker.add_reflect", Add)
 
 	// start workers (non-blocking call)
 	cli.StartWorker()
