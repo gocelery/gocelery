@@ -164,6 +164,8 @@ func runTaskFunc(taskFunc *reflect.Value, message *TaskMessage) (*ResultMessage,
 
 	// construct arguments
 	in := make([]reflect.Value, messageNumArgs)
+	log.Printf("message.Args type [%T]\n", message.Args)
+	log.Println("message.Args is [", message.Args, "]")
 	for i, arg := range message.Args {
 		origType := taskFunc.Type().In(i).Kind()
 		msgType := reflect.TypeOf(arg).Kind()
