@@ -167,6 +167,8 @@ func runTaskFunc(taskFunc *reflect.Value, message *TaskMessage) (*ResultMessage,
 	log.Printf("message.Args type [%T]\n", message.Args)
 	log.Println("message.Args is [", message.Args, "]")
 	for i, arg := range message.Args {
+		log.Printf("arg type [%T]\n", arg)
+		log.Println(arg)
 		origType := taskFunc.Type().In(i).Kind()
 		msgType := reflect.TypeOf(arg).Kind()
 		// special case - convert float64 to int if applicable
