@@ -1,0 +1,41 @@
+version: "2.4"
+
+services:
+  redis:
+    image: redis
+    labels:
+      - "integration"
+    networks:
+      - "tests"
+    volumes:
+      - redis-volume-test:/data
+    ports:
+      - "${REDIS_PORT:-0}:6379"
+  rabbitmq:
+    image: rabbitmq:management
+    labels:
+      - "integration"
+    networks:
+      - "tests"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=root
+    volumes:
+      - ./config/rabbit/rabbitmq.config:/etc/rabbitmq/rabbitmq.config:ro
+      - ./config/rabbit/definition.json:/etc/rabbitmq/definition.json:ro
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    ports:
+      - "${RABBITMQ_PORT:-0}:5672"
+      - "${RABBITMQ_MGMT_PORT:-0}:15672"
+
+networks:
+  tests:
+    name: "tests"
+
+volumes:
+  redis-volume-test:
+  db-volume-test:

@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/streadway/amqp"
+
 	"github.com/gomodule/redigo/redis"
 	uuid "github.com/satori/go.uuid"
 )
@@ -31,8 +33,14 @@ var (
 	redisBrokerWithConn  = NewRedisBroker(redisPool, "celery")
 	redisBackend         = NewRedisCeleryBackend("redis://")
 	redisBackendWithConn = NewRedisBackend(redisPool)
-	amqpBroker           = NewAMQPCeleryBroker("amqp://", "celery")
-	amqpBackend          = NewAMQPCeleryBackend("amqp://")
+	amqpBroker           = func() *AMQPCeleryBroker {
+		b, err := NewAMQPCeleryBroker("amqp://", &amqp.Config{}, "celery")
+		if err != nil {
+			panic(err)
+		}
+		return b
+	}()
+	amqpBackend = NewAMQPCeleryBackend("amqp://")
 )
 
 // TestNoArg tests successful function execution

@@ -1,0 +1,39 @@
+{
+  "rabbit_version": "3.9",
+  "users": [
+    {
+      "name": "admin",
+      "password": "root",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "\/go-worker"
+    },
+    {
+      "name": "\/py-worker"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "admin",
+      "vhost": "\/py-worker",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "admin",
+      "vhost": "\/go-worker",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "parameters": [],
+  "policies": [],
+  "queues": [],
+  "exchanges": [],
+  "bindings": []
+}

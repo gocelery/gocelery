@@ -22,3 +22,16 @@ func deliveryAck(delivery amqp.Delivery) {
 		log.Printf("amqp_backend: failed to acknowledge result message %+v: %+v", delivery.MessageId, err)
 	}
 }
+
+// NewAMQPConnection creates new AMQP channel
+func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
+	connection, err := amqp.Dial(host)
+	if err != nil {
+		panic(err)
+	}
+	channel, err := connection.Channel()
+	if err != nil {
+		panic(err)
+	}
+	return connection, channel
+}

@@ -38,6 +38,9 @@ func NewCeleryWorker(broker CeleryBroker, backend CeleryBackend, numWorkers int)
 
 // StartWorkerWithContext starts celery worker(s) with given parent context
 func (w *CeleryWorker) StartWorkerWithContext(ctx context.Context) {
+	if err := w.setupBroker(); err != nil {
+		panic(err)
+	}
 	var wctx context.Context
 	wctx, w.cancel = context.WithCancel(ctx)
 	w.workWG.Add(w.numWorkers)
@@ -152,6 +155,15 @@ func (w *CeleryWorker) RunTask(message *TaskMessage) (*ResultMessage, error) {
 	// use reflection to execute function ptr
 	taskFunc := reflect.ValueOf(task)
 	return runTaskFunc(&taskFunc, message)
+}
+
+func (w *CeleryWorker) setupBroker() error {
+	if amqp, ok := w.broker.(*AMQPCeleryBroker); ok {
+		if err := amqp.Listen(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func runTaskFunc(taskFunc *reflect.Value, message *TaskMessage) (*ResultMessage, error) {
