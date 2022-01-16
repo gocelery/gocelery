@@ -76,7 +76,7 @@ func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 	}
 	log.Println("==GetCeleryMessage decoded message==")
 	log.Println(message)
-	log.Println(message.body)
+	log.Println(message.Body)
 	return &message, nil
 }
 
