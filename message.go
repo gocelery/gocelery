@@ -163,8 +163,8 @@ func DecodeTaskMessage(encodedBody string) (*TaskMessage, error) {
 	message := taskMessagePool.Get().(*TaskMessage)
 	err = json.Unmarshal(body, message)
 	log.Println("==json unmarshaled message.Args==")
-	log.Println(*message.Args)
-	log.Println("arg type [%T]\n", *message.Args)
+	log.Println((*message).Args)
+	log.Println("arg type [%T]\n", (*message).Args)
 	if err != nil {
 		return nil, err
 	}
