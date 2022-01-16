@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+	"log"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -57,6 +58,8 @@ func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 	conn := cb.Get()
 	defer conn.Close()
 	messageJSON, err := conn.Do("BRPOP", cb.QueueName, "1")
+	log.Println("==GetCeleryMessage messageJson==")
+	log.Println(messageJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +74,9 @@ func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 	if err := json.Unmarshal(messageList[1].([]byte), &message); err != nil {
 		return nil, err
 	}
+	log.Println("==GetCeleryMessage decoded message==")
+	log.Println(message)
+	log.Println(message.body)
 	return &message, nil
 }
 

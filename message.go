@@ -156,11 +156,15 @@ func releaseTaskMessage(v *TaskMessage) {
 // DecodeTaskMessage decodes base64 encrypted body and return TaskMessage object
 func DecodeTaskMessage(encodedBody string) (*TaskMessage, error) {
 	body, err := base64.StdEncoding.DecodeString(encodedBody)
+	log.Println("decoded body [", body, "]")
 	if err != nil {
 		return nil, err
 	}
 	message := taskMessagePool.Get().(*TaskMessage)
 	err = json.Unmarshal(body, message)
+	log.Println("==json unmarshaled message.Args==")
+	log.Println(*message.Args)
+	log.Println("arg type [%T]\n", *message.Args)
 	if err != nil {
 		return nil, err
 	}
