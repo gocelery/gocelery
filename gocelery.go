@@ -66,7 +66,13 @@ func (cc *CeleryClient) WaitForStopWorker() {
 // Delay gets asynchronous result
 func (cc *CeleryClient) Delay(task string, args ...interface{}) (*AsyncResult, error) {
 	celeryTask := getTaskMessage(task)
+	log.Println("==Delay args==")
+	log.Println(args)
+	log.Println("arg type [%T]\n", args)
 	celeryTask.Args = args
+	log.Println("==celeryTask args==")
+	log.Println(celeryTask.Args)
+	log.Println("celeryTask arg type [%T]\n", celeryTask.Args)
 	return cc.delay(celeryTask)
 }
 
