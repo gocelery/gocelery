@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -91,8 +90,6 @@ func (cb *RedisCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
 
 func NewRedisClient(uri string) redis.UniversalClient {
 	opt, _ := redis.ParseURL(uri)
-	log.Println(" ------ === opt: ", opt)
-
 	redisClient := redis.NewUniversalClient(&redis.UniversalOptions{
 		Addrs:    []string{opt.Addr},
 		Username: opt.Username,
