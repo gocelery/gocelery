@@ -5,24 +5,26 @@
 package gocelery
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
-	"github.com/gomodule/redigo/redis"
+	"github.com/go-redis/redis/v8"
 )
 
 // RedisCeleryBroker is celery broker for redis
 type RedisCeleryBroker struct {
-	*redis.Pool
-	QueueName string
+	RedisClient redis.UniversalClient
+	QueueName   string
+	ctx         *context.Context
 }
 
 // NewRedisBroker creates new RedisCeleryBroker with given redis connection pool
-func NewRedisBroker(conn *redis.Pool) *RedisCeleryBroker {
+func NewRedisBroker(ctx *context.Context, redisClient redis.UniversalClient) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
-		Pool:      conn,
-		QueueName: "celery",
+		RedisClient: redisClient,
+		QueueName:   "celery",
+		ctx:         ctx,
 	}
 }
 
@@ -30,10 +32,11 @@ func NewRedisBroker(conn *redis.Pool) *RedisCeleryBroker {
 //
 // Deprecated: NewRedisCeleryBroker exists for historical compatibility
 // and should not be used. Use NewRedisBroker instead to create new RedisCeleryBroker.
-func NewRedisCeleryBroker(uri string) *RedisCeleryBroker {
+func NewRedisCeleryBroker(ctx *context.Context, uri string) *RedisCeleryBroker {
 	return &RedisCeleryBroker{
-		Pool:      NewRedisPool(uri),
-		QueueName: "celery",
+		RedisClient: NewRedisClient(uri),
+		QueueName:   "celery",
+		ctx:         ctx,
 	}
 }
 
@@ -43,9 +46,9 @@ func (cb *RedisCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 	if err != nil {
 		return err
 	}
-	conn := cb.Get()
-	defer conn.Close()
-	_, err = conn.Do("LPUSH", cb.QueueName, jsonBytes)
+	conn := cb.RedisClient
+
+	_, err = conn.Do(*cb.ctx, "LPUSH", cb.QueueName, jsonBytes).Result()
 	if err != nil {
 		return err
 	}
@@ -54,9 +57,9 @@ func (cb *RedisCeleryBroker) SendCeleryMessage(message *CeleryMessage) error {
 
 // GetCeleryMessage retrieves celery message from redis queue
 func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
-	conn := cb.Get()
-	defer conn.Close()
-	messageJSON, err := conn.Do("BRPOP", cb.QueueName, "1")
+	conn := cb.RedisClient
+
+	messageJSON, err := conn.Do(*cb.ctx, "BRPOP", cb.QueueName, "1").Result()
 	if err != nil {
 		return nil, err
 	}
@@ -64,11 +67,13 @@ func (cb *RedisCeleryBroker) GetCeleryMessage() (*CeleryMessage, error) {
 		return nil, fmt.Errorf("null message received from redis")
 	}
 	messageList := messageJSON.([]interface{})
-	if string(messageList[0].([]byte)) != cb.QueueName {
+	if string(messageList[0].(string)) != cb.QueueName {
 		return nil, fmt.Errorf("not a celery message: %v", messageList[0])
 	}
 	var message CeleryMessage
-	if err := json.Unmarshal(messageList[1].([]byte), &message); err != nil {
+	// FIXME::
+	cnt := messageList[1].(string)
+	if err := json.Unmarshal([]byte(cnt), &message); err != nil {
 		return nil, err
 	}
 	return &message, nil
@@ -83,24 +88,13 @@ func (cb *RedisCeleryBroker) GetTaskMessage() (*TaskMessage, error) {
 	return celeryMessage.GetTaskMessage(), nil
 }
 
-// NewRedisPool creates pool of redis connections from given connection string
-//
-// Deprecated: newRedisPool exists for historical compatibility
-// and should not be used. Pool should be initialized outside of gocelery package.
-func NewRedisPool(uri string) *redis.Pool {
-	return &redis.Pool{
-		MaxIdle:     3,
-		IdleTimeout: 240 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.DialURL(uri)
-			if err != nil {
-				return nil, err
-			}
-			return c, err
-		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
-		},
-	}
+func NewRedisClient(uri string) redis.UniversalClient {
+	opt, _ := redis.ParseURL(uri)
+	redisClient := redis.NewUniversalClient(&redis.UniversalOptions{
+		Addrs:    []string{opt.Addr},
+		Username: opt.Username,
+		Password: opt.Password,
+		DB:       opt.DB,
+	})
+	return redisClient
 }

@@ -5,32 +5,28 @@
 package gocelery
 
 import (
+	"context"
 	"log"
 	"math/rand"
 	"reflect"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
+	"github.com/go-redis/redis/v8"
 )
 
 func Example_clientWithNamedArguments() {
 
-	// create redis connection pool
-	// create redis connection pool
-	redisPool := &redis.Pool{
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.DialURL("redis://")
-			if err != nil {
-				return nil, err
-			}
-			return c, err
-		},
-	}
-
+	// create redis connection client
+	// create redis connection client
+	redisClient = redis.NewUniversalClient(&redis.UniversalOptions{
+		Addrs: []string{"localhost:6379"},
+		DB:    0,
+	})
+	ctx := context.Background()
 	// initialize celery client
 	cli, _ := NewCeleryClient(
-		NewRedisBroker(redisPool),
-		&RedisCeleryBackend{Pool: redisPool},
+		NewRedisBroker(&ctx, redisClient),
+		&RedisCeleryBackend{RedisClient: redisClient},
 		1,
 	)
 

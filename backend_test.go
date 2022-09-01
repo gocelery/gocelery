@@ -5,6 +5,7 @@
 package gocelery
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -29,6 +30,7 @@ func TestBackendRedisGetResult(t *testing.T) {
 			backend: redisBackendWithConn,
 		},
 	}
+	ctx := context.Background()
 	for _, tc := range testCases {
 		taskID := uuid.Must(uuid.NewV4()).String()
 		// value must be float64 for testing due to json limitation
@@ -40,9 +42,8 @@ func TestBackendRedisGetResult(t *testing.T) {
 			releaseResultMessage(resultMessage)
 			continue
 		}
-		conn := tc.backend.Get()
-		defer conn.Close()
-		_, err = conn.Do("SETEX", fmt.Sprintf("celery-task-meta-%s", taskID), 86400, messageBytes)
+		conn := tc.backend.RedisClient
+		_, err = conn.Do(ctx, "SETEX", fmt.Sprintf("celery-task-meta-%s", taskID), 86400, messageBytes).Result()
 		if err != nil {
 			t.Errorf("test '%s': error setting result message to celery: %v", tc.name, err)
 			releaseResultMessage(resultMessage)
@@ -76,6 +77,7 @@ func TestBackendRedisSetResult(t *testing.T) {
 			backend: redisBackendWithConn,
 		},
 	}
+	ctx := context.Background()
 	for _, tc := range testCases {
 		taskID := uuid.Must(uuid.NewV4()).String()
 		value := reflect.ValueOf(rand.Float64())
@@ -86,9 +88,8 @@ func TestBackendRedisSetResult(t *testing.T) {
 			releaseResultMessage(resultMessage)
 			continue
 		}
-		conn := tc.backend.Get()
-		defer conn.Close()
-		val, err := conn.Do("GET", fmt.Sprintf("celery-task-meta-%s", taskID))
+		conn := tc.backend.RedisClient
+		val, err := conn.Do(ctx, "GET", fmt.Sprintf("celery-task-meta-%s", taskID)).Result()
 		if err != nil {
 			t.Errorf("test '%s': error getting data from redis: %v", tc.name, err)
 			releaseResultMessage(resultMessage)
@@ -100,7 +101,9 @@ func TestBackendRedisSetResult(t *testing.T) {
 			continue
 		}
 		var res ResultMessage
-		err = json.Unmarshal(val.([]byte), &res)
+		// FIXME::
+		cnt := val.(string)
+		err = json.Unmarshal([]byte(cnt), &res)
 		if err != nil {
 			t.Errorf("test '%s': error parsing json result", tc.name)
 			releaseResultMessage(resultMessage)
