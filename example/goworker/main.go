@@ -5,11 +5,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"github.com/go-redis/redis/v8"
+
 	"github.com/gocelery/gocelery"
-	"github.com/gomodule/redigo/redis"
 )
 
 // exampleAddTask is integer addition task
@@ -46,35 +48,31 @@ func (a *exampleAddTask) RunTask() (interface{}, error) {
 	return result, nil
 }
 
+func add(a, b int) int {
+	return a + b
+}
+
 func main() {
 
 	// create redis connection pool
-	redisPool := &redis.Pool{
-		MaxIdle:     3,                 // maximum number of idle connections in the pool
-		MaxActive:   0,                 // maximum number of connections allocated by the pool at a given time
-		IdleTimeout: 240 * time.Second, // close connections after remaining idle for this duration
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.DialURL("redis://")
-			if err != nil {
-				return nil, err
-			}
-			return c, err
-		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
-		},
-	}
+	ctx := context.Background()
+
+	redisClient := redis.NewUniversalClient(&redis.UniversalOptions{
+		Addrs: []string{"localhost:6379"},
+		DB:    3,
+	})
 
 	// initialize celery client
 	cli, _ := gocelery.NewCeleryClient(
-		gocelery.NewRedisBroker(redisPool),
-		&gocelery.RedisCeleryBackend{Pool: redisPool},
+		gocelery.NewRedisBroker(&ctx, redisClient),
+		// &gocelery.RedisCeleryBackend{RedisClient: redisClient},
+		gocelery.NewRedisBackend(&ctx, redisClient),
 		5, // number of workers
 	)
 
 	// register task
 	cli.Register("worker.add_reflect", &exampleAddTask{})
+	cli.Register("worker.add", add)
 
 	// start workers (non-blocking call)
 	cli.StartWorker()

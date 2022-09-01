@@ -5,32 +5,30 @@
 package gocelery
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
+	"github.com/go-redis/redis/v8"
 	uuid "github.com/satori/go.uuid"
 )
 
 const TIMEOUT = 2 * time.Second
 
 var (
-	redisPool = &redis.Pool{
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.DialURL("redis://")
-			if err != nil {
-				return nil, err
-			}
-			return c, err
-		},
-	}
-	redisBroker          = NewRedisCeleryBroker("redis://")
-	redisBrokerWithConn  = NewRedisBroker(redisPool)
-	redisBackend         = NewRedisCeleryBackend("redis://")
-	redisBackendWithConn = NewRedisBackend(redisPool)
+	redisClient = redis.NewUniversalClient(&redis.UniversalOptions{
+		Addrs: []string{"localhost:6379"},
+		DB:    0,
+	})
+
+	ctx                  = context.Background()
+	redisBroker          = NewRedisCeleryBroker(&ctx, "redis://localhost:6379/0")
+	redisBrokerWithConn  = NewRedisBroker(&ctx, redisClient)
+	redisBackend         = NewRedisCeleryBackend(&ctx, "redis://localhost:6379/0")
+	redisBackendWithConn = NewRedisBackend(&ctx, redisClient)
 	amqpBroker           = NewAMQPCeleryBroker("amqp://")
 	amqpBackend          = NewAMQPCeleryBackend("amqp://")
 )

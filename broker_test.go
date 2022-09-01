@@ -5,6 +5,7 @@
 package gocelery
 
 import (
+	"context"
 	"encoding/json"
 	"math/rand"
 	"reflect"
@@ -38,6 +39,8 @@ func TestBrokerRedisSend(t *testing.T) {
 			broker: redisBrokerWithConn,
 		},
 	}
+	ctx := context.Background()
+
 	for _, tc := range testCases {
 		celeryMessage, err := makeCeleryMessage()
 		if err != nil || celeryMessage == nil {
@@ -50,22 +53,25 @@ func TestBrokerRedisSend(t *testing.T) {
 			releaseCeleryMessage(celeryMessage)
 			continue
 		}
-		conn := tc.broker.Get()
-		defer conn.Close()
-		messageJSON, err := conn.Do("BRPOP", tc.broker.QueueName, "1")
+		conn := tc.broker.RedisClient
+
+		messageJSON, err := conn.Do(ctx, "BRPOP", tc.broker.QueueName, "1").Result()
 		if err != nil || messageJSON == nil {
 			t.Errorf("test '%s': failed to get celery message from broker: %v", tc.name, err)
 			releaseCeleryMessage(celeryMessage)
 			continue
 		}
 		messageList := messageJSON.([]interface{})
-		if string(messageList[0].([]byte)) != "celery" {
+		cnt1 := messageList[0].(string)
+		if cnt1 != "celery" {
 			t.Errorf("test '%s': non celery message received", tc.name)
 			releaseCeleryMessage(celeryMessage)
 			continue
 		}
 		var message CeleryMessage
-		if err := json.Unmarshal(messageList[1].([]byte), &message); err != nil {
+		// FIXME::
+		cnt := messageList[1].(string)
+		if err := json.Unmarshal([]byte(cnt), &message); err != nil {
 			t.Errorf("test '%s': failed to unmarshal received message: %v", tc.name, err)
 			releaseCeleryMessage(celeryMessage)
 			continue
@@ -92,6 +98,7 @@ func TestBrokerRedisGet(t *testing.T) {
 			broker: redisBrokerWithConn,
 		},
 	}
+	ctx := context.Background()
 	for _, tc := range testCases {
 		celeryMessage, err := makeCeleryMessage()
 		if err != nil || celeryMessage == nil {
@@ -104,9 +111,9 @@ func TestBrokerRedisGet(t *testing.T) {
 			releaseCeleryMessage(celeryMessage)
 			continue
 		}
-		conn := tc.broker.Get()
-		defer conn.Close()
-		_, err = conn.Do("LPUSH", tc.broker.QueueName, jsonBytes)
+		conn := tc.broker.RedisClient
+
+		_, err = conn.Do(ctx, "LPUSH", tc.broker.QueueName, jsonBytes).Result()
 		if err != nil {
 			t.Errorf("test '%s': failed to push celery message to redis: %v", tc.name, err)
 			releaseCeleryMessage(celeryMessage)

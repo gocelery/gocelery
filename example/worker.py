@@ -6,8 +6,8 @@ from celery import Celery
 
 app = Celery(
     'tasks',
-    broker='redis://',
-    backend='redis://',
+    broker='redis://localhost:6379/3',
+    backend='redis://localhost:6379/3',
 )
 
 app.conf.update(

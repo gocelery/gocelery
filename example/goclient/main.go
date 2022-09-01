@@ -5,53 +5,48 @@
 package main
 
 import (
+	"context"
 	"log"
 	"math/rand"
 	"reflect"
 	"time"
 
+	"github.com/go-redis/redis/v8"
+
 	"github.com/gocelery/gocelery"
-	"github.com/gomodule/redigo/redis"
 )
 
 // Run Celery Worker First!
 // celery -A worker worker --loglevel=debug --without-heartbeat --without-mingle
 func main() {
 
-	// create redis connection pool
-	redisPool := &redis.Pool{
-		MaxIdle:     3,                 // maximum number of idle connections in the pool
-		MaxActive:   0,                 // maximum number of connections allocated by the pool at a given time
-		IdleTimeout: 240 * time.Second, // close connections after remaining idle for this duration
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.DialURL("redis://")
-			if err != nil {
-				return nil, err
-			}
-			return c, err
-		},
-		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
-		},
-	}
+	// create redis connection client
+
+	redisClient := redis.NewUniversalClient(&redis.UniversalOptions{
+		Addrs: []string{"localhost:6379"},
+		DB:    3,
+	})
+	ctx := context.Background()
 
 	// initialize celery client
 	cli, _ := gocelery.NewCeleryClient(
-		gocelery.NewRedisBroker(redisPool),
-		&gocelery.RedisCeleryBackend{Pool: redisPool},
+		gocelery.NewRedisBroker(&ctx, redisClient),
+		gocelery.NewRedisBackend(&ctx, redisClient),
+		// &gocelery.RedisCeleryBackend{RedisClient: redisClient},
 		1,
 	)
 
 	// prepare arguments
 	taskName := "worker.add"
+	// taskName := "worker.add_reflect"
 	argA := rand.Intn(10)
 	argB := rand.Intn(10)
-
+	log.Println(" a : ", argA, " b : ", argB)
 	// run task
 	asyncResult, err := cli.Delay(taskName, argA, argB)
 	if err != nil {
 		panic(err)
+
 	}
 
 	// get results from backend with timeout
@@ -59,7 +54,24 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	log.Printf("result: %+v of type %+v", res, reflect.TypeOf(res))
+	time.Sleep(time.Second * 2)
+	//
+	asyncResult1, err1 := cli.DelayKwargs(taskName, map[string]interface{}{
+		"a": argA + 1,
+		"b": argB + 1,
+	})
+
+	if err1 != nil {
+		panic(err1)
+	}
+
+	// get results from backend with timeout
+	res1, err1 := asyncResult1.Get(10 * time.Second)
+	if err != nil {
+		panic(err1)
+	}
+
+	log.Printf("result: %+v of type %+v", res1, reflect.TypeOf(res1))
 
 }
