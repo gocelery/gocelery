@@ -14,7 +14,7 @@ import (
 func Example_worker() {
 
 	// create redis connection client
-	redisClient = redis.NewUniversalClient(&redis.UniversalOptions{
+	redisClient := redis.NewUniversalClient(&redis.UniversalOptions{
 		Addrs: []string{"localhost:6379"},
 		DB:    0,
 	})

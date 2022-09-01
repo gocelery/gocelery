@@ -49,7 +49,7 @@ func (a *exampleAddTask) RunTask() (interface{}, error) {
 func Example_workerWithNamedArguments() {
 
 	// create redis connection pool
-	redisClient = redis.NewUniversalClient(&redis.UniversalOptions{
+	redisClient := redis.NewUniversalClient(&redis.UniversalOptions{
 		Addrs: []string{"localhost:6379"},
 		DB:    0,
 	})
