@@ -27,11 +27,11 @@ var (
 			return c, err
 		},
 	}
-	redisBroker          = NewRedisCeleryBroker("redis://")
-	redisBrokerWithConn  = NewRedisBroker(redisPool)
+	redisBroker          = NewRedisCeleryBroker("redis://", "celery")
+	redisBrokerWithConn  = NewRedisBroker(redisPool, "celery")
 	redisBackend         = NewRedisCeleryBackend("redis://")
 	redisBackendWithConn = NewRedisBackend(redisPool)
-	amqpBroker           = NewAMQPCeleryBroker("amqp://")
+	amqpBroker           = NewAMQPCeleryBroker("amqp://", "default", "celery")
 	amqpBackend          = NewAMQPCeleryBackend("amqp://")
 )
 
