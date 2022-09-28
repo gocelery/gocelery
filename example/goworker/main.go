@@ -68,7 +68,7 @@ func main() {
 
 	// initialize celery client
 	cli, _ := gocelery.NewCeleryClient(
-		gocelery.NewRedisBroker(redisPool),
+		gocelery.NewRedisBroker(redisPool, "celery"),
 		&gocelery.RedisCeleryBackend{Pool: redisPool},
 		5, // number of workers
 	)

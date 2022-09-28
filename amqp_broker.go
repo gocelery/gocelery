@@ -71,17 +71,18 @@ func NewAMQPConnection(host string) (*amqp.Connection, *amqp.Channel) {
 }
 
 // NewAMQPCeleryBroker creates new AMQPCeleryBroker
-func NewAMQPCeleryBroker(host string) *AMQPCeleryBroker {
-	return NewAMQPCeleryBrokerByConnAndChannel(NewAMQPConnection(host))
+func NewAMQPCeleryBroker(host, exchangeName, queueName string) *AMQPCeleryBroker {
+	conn, channel := NewAMQPConnection(host)
+	return NewAMQPCeleryBrokerByConnAndChannel(conn, channel, exchangeName, queueName)
 }
 
 // NewAMQPCeleryBrokerByConnAndChannel creates new AMQPCeleryBroker using AMQP conn and channel
-func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel) *AMQPCeleryBroker {
+func NewAMQPCeleryBrokerByConnAndChannel(conn *amqp.Connection, channel *amqp.Channel, exchangeName string, queueName string) *AMQPCeleryBroker {
 	broker := &AMQPCeleryBroker{
 		Channel:    channel,
 		Connection: conn,
-		Exchange:   NewAMQPExchange("default"),
-		Queue:      NewAMQPQueue("celery"),
+		Exchange:   NewAMQPExchange(exchangeName),
+		Queue:      NewAMQPQueue(queueName),
 		Rate:       4,
 	}
 	if err := broker.CreateExchange(); err != nil {

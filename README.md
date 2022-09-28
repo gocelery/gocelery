@@ -69,7 +69,7 @@ redisPool := &redis.Pool{
 
 // initialize celery client
 cli, _ := gocelery.NewCeleryClient(
-	gocelery.NewRedisBroker(redisPool),
+	gocelery.NewRedisBroker(redisPool, "celery"),
 	&gocelery.RedisCeleryBackend{Pool: redisPool},
 	5, // number of workers
 )
@@ -152,7 +152,7 @@ redisPool := &redis.Pool{
 
 // initialize celery client
 cli, _ := gocelery.NewCeleryClient(
-	gocelery.NewRedisBroker(redisPool),
+	gocelery.NewRedisBroker(redisPool, "celery"),
 	&gocelery.RedisCeleryBackend{Pool: redisPool},
 	1,
 )
