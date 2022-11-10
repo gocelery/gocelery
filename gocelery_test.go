@@ -660,7 +660,7 @@ func TestFloatNamedArguments(t *testing.T) {
 // TestFloat32 tests successful function execution
 // with float32 arguments and return value
 // Bug(sickyoon): float32 as an argument throws a panic
-// https://github.com/gocelery/gocelery/issues/75
+// https://github.com/mudrex/gocelery/issues/75
 func TestFloat32(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -729,7 +729,7 @@ func TestFloat32(t *testing.T) {
 // TestFloat32NamedArguments tests successful function execution
 // with float32 arguments and return value
 // Bug(sickyoon): float32 as an argument throws a panic
-// https://github.com/gocelery/gocelery/issues/75
+// https://github.com/mudrex/gocelery/issues/75
 func TestFloat32NamedArguments(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -1308,7 +1308,7 @@ func (a *addFloatTask) RunTask() (interface{}, error) {
 }
 
 // Bug(sickyoon): float32 as am argument throws a panic
-// https://github.com/gocelery/gocelery/issues/75
+// https://github.com/mudrex/gocelery/issues/75
 
 // addFloat32 returns sum of two float32 values
 func addFloat32(a, b float32) float32 {
