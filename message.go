@@ -7,7 +7,6 @@ package gocelery
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"log"
 	"reflect"
 	"sync"
@@ -104,11 +103,10 @@ func (cm *CeleryMessage) GetTaskMessage() *TaskMessage {
 	// decode body
 	taskMessage, err := DecodeTaskMessage(cm.Body, cm.Headers)
 	if err != nil {
-		log.Println("failed to decode task message", err, cm.Body, taskMessage)
+		log.Println("[gocelery] failed to decode task message", err, cm.Body)
 		return nil
 	}
 
-	fmt.Println(taskMessage)
 	return taskMessage
 }
 
@@ -167,13 +165,24 @@ func DecodeTaskMessage(encodedBody string, headers map[string]interface{}) (*Tas
 	err = json.Unmarshal(body, message)
 	if err != nil {
 		// try for new version
-		message.ID = headers["id"].(string)
-		message.Task = headers["task"].(string)
+		if value, ok := headers["id"]; ok {
+			if id, ok := value.(string); ok {
+				message.ID = id
+			}
+		}
 
-		if retriesFloat64, ok := headers["retries"].(float64); ok {
-			message.Retries = int(retriesFloat64)
-		} else if retriesInt, ok := headers["retries"].(int); ok {
-			message.Retries = retriesInt
+		if value, ok := headers["task"]; ok {
+			if task, ok := value.(string); ok {
+				message.Task = task
+			}
+		}
+
+		if retries, ok := headers["retries"]; ok {
+			if retriesFloat64, ok := retries.(float64); ok {
+				message.Retries = int(retriesFloat64)
+			} else if retriesInt, ok := retries.(int); ok {
+				message.Retries = retriesInt
+			}
 		}
 
 		var newBody []interface{}
@@ -183,8 +192,13 @@ func DecodeTaskMessage(encodedBody string, headers map[string]interface{}) (*Tas
 			return nil, err
 		}
 
-		message.Args = newBody[0].([]interface{})
-		message.Kwargs = newBody[1].(map[string]interface{})
+		if value, ok := newBody[0].([]interface{}); ok {
+			message.Args = value
+		}
+
+		if value, ok := newBody[1].(map[string]interface{}); ok {
+			message.Kwargs = value
+		}
 
 		return message, err
 	}
