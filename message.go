@@ -6,7 +6,6 @@ import (
 	"log"
 	"reflect"
 	"sync"
-	"time"
 )
 
 // CeleryMessage is actual message to be sent to Redis
@@ -110,7 +109,7 @@ type TaskMessage struct {
 	Args    []interface{}          `json:"args"`
 	Kwargs  map[string]interface{} `json:"kwargs"`
 	Retries int                    `json:"retries"`
-	ETA     string                 `json:"eta"`
+	ETA     *string                `json:"eta"`
 }
 
 func (tm *TaskMessage) reset() {
@@ -126,7 +125,7 @@ var taskMessagePool = sync.Pool{
 			ID:      generateUUID(),
 			Retries: 0,
 			Kwargs:  nil,
-			ETA:     time.Now().Format(time.RFC3339),
+			ETA:     nil,
 		}
 	},
 }
@@ -136,7 +135,7 @@ func getTaskMessage(task string) *TaskMessage {
 	msg.Task = task
 	msg.Args = make([]interface{}, 0)
 	msg.Kwargs = make(map[string]interface{})
-	msg.ETA = time.Now().Format(time.RFC3339)
+	msg.ETA = nil
 	return msg
 }
 
